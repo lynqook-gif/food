@@ -54,6 +54,9 @@ textarea{min-height:88px;resize:vertical;font:13px/1.5 var(--ui)}
 .duplist .tag{font-size:11px;color:#B3261E;font-weight:600;margin-left:4px}
 .duplist .where{grid-column:2/4;color:var(--muted);font-size:11.5px}
 .duplist .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.duplist button[aria-pressed="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.duphead{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12.5px;color:var(--muted)}
+.duphead button{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:2px 8px;font-size:12px;cursor:pointer}
 .notice{background:var(--accent-soft);border-radius:8px;padding:8px 12px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* ---------- 용지 (항상 흰 종이) ---------- */
@@ -89,6 +92,8 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 .date:hover{background:#DDEBE3}
 .date.out{color:#A5A5A5}
 .date.ovr{text-decoration:underline dotted #2F6B4F;text-underline-offset:2px}
+.date.hol{color:#D2382B;font-weight:700}
+.date.out.hol{color:#EBA59F}
 .date-edit{width:9em;height:100%;border:0;font:inherit;background:#E8F1EC;color:#111}
 .lines{display:flex;flex-direction:column}
 .lines input{height:var(--lh);border:0;width:100%;padding:0 .8mm;font-size:var(--fs);line-height:1;text-align:center;background:transparent;color:#111;min-width:0}
@@ -205,12 +210,18 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
         <div><span style="background:var(--dup-week)"></span>같은 주 겹침</div>
         <div><span style="background:var(--dup-all)"></span>전체 기간에서 겹침</div>
       </div>
+      <div class="duphead"><span id="dupHint">음식을 누르면 그것만 색이 표시돼요.</span><button type="button" id="dupAll" hidden>전체 보기</button></div>
       <ul class="duplist" id="duplist"></ul>
     </section>
     <section class="box">
       <h2>중복 검사 제외 음식</h2>
       <textarea id="exclude" aria-label="중복 검사 제외 음식, 한 줄에 하나"></textarea>
       <p class="hint">한 줄에 하나씩. 띄어쓰기와 끝에 붙은 알레르기 번호(예: 5.6.13)는 무시하고 비교합니다.</p>
+    </section>
+    <section class="box">
+      <h2>공휴일 직접 추가</h2>
+      <textarea id="holidays" aria-label="직접 추가할 공휴일, 한 줄에 하나" placeholder="2026-10-15 개교기념일&#10;2026-11-19 재량휴업일"></textarea>
+      <p class="hint">한 줄에 하나씩 <b>날짜 이름</b>으로 적으면 빨간색으로 표시돼요. 2025~2028년 법정 공휴일·대체공휴일은 이미 들어 있어요. 날짜는 2026-10-15, 2026.10.15, 26.10.15 모두 됩니다.</p>
     </section>
     <footer class="credit">
       <span>제작 <b>정주고등학교 박지은</b></span>
@@ -259,7 +270,7 @@ const today = new Date();
 const firstNext = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1));
 const defaults = () => ({
   start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', lines: 7, printColors: false,
-  overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], sample: true, v: 2,
+  overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], holidays: [], sample: true, v: 2,
 });
 
 let state = defaults();
@@ -289,6 +300,45 @@ const dateOf = (w, d) => state.overrides[`${w}-${d}`] ? parse(state.overrides[`$
 const autoTitle = () => { const s = startDate(); return `${s.getUTCFullYear()}년 ${s.getUTCMonth()+1}월 식단표`; };
 const norm = v => (v || '').replace(/[\s\d.,*()]+$/,'').replace(/\s+/g,'');
 
+// ---------- 공휴일 ----------
+// 법정 공휴일·대체공휴일 (2026년부터 노동절·제헌절 공휴일). 임시공휴일은 '공휴일 직접 추가'로.
+const HOLIDAYS = {
+  '2025-01-01':'신정','2025-01-27':'임시공휴일','2025-01-28':'설날 연휴','2025-01-29':'설날','2025-01-30':'설날 연휴',
+  '2025-03-01':'삼일절','2025-03-03':'대체공휴일(삼일절)','2025-05-05':'어린이날·부처님오신날','2025-05-06':'대체공휴일',
+  '2025-06-03':'대통령선거일','2025-06-06':'현충일','2025-08-15':'광복절','2025-10-03':'개천절',
+  '2025-10-05':'추석 연휴','2025-10-06':'추석','2025-10-07':'추석 연휴','2025-10-08':'대체공휴일(추석)','2025-10-09':'한글날','2025-12-25':'성탄절',
+  '2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
+  '2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)','2026-05-01':'노동절','2026-05-05':'어린이날',
+  '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일(부처님오신날)','2026-06-03':'지방선거일','2026-06-06':'현충일',
+  '2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)',
+  '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
+  '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)','2026-10-09':'한글날','2026-12-25':'성탄절',
+  '2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일(설날)',
+  '2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-03':'대체공휴일(노동절)','2027-05-05':'어린이날','2027-05-13':'부처님오신날',
+  '2027-06-06':'현충일','2027-07-17':'제헌절','2027-07-19':'대체공휴일(제헌절)','2027-08-15':'광복절','2027-08-16':'대체공휴일(광복절)',
+  '2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴',
+  '2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)','2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)',
+  '2027-12-25':'성탄절','2027-12-27':'대체공휴일(성탄절)',
+  '2028-01-01':'신정','2028-01-26':'설날 연휴','2028-01-27':'설날','2028-01-28':'설날 연휴',
+  '2028-03-01':'삼일절','2028-04-12':'국회의원선거일','2028-05-01':'노동절','2028-05-02':'부처님오신날','2028-05-05':'어린이날',
+  '2028-06-06':'현충일','2028-07-17':'제헌절','2028-08-15':'광복절',
+  '2028-10-02':'추석 연휴','2028-10-03':'추석·개천절','2028-10-04':'추석 연휴','2028-10-05':'대체공휴일','2028-10-09':'한글날','2028-12-25':'성탄절',
+};
+// '2026-10-15 개교기념일', '2026.10.15', '26.10.15', '10/15'(시작일 연도) 모두 인식
+function parseHolidayLine(line) {
+  const m = line.trim().match(/^(\d{2,4})[-./]\s*(\d{1,2})[-./]\s*(\d{1,2})\.?\s*(.*)$/) || line.trim().match(/^()(\d{1,2})[-./](\d{1,2})\.?\s*(.*)$/);
+  if (!m) return null;
+  let y = m[1] ? Number(m[1]) : startDate().getUTCFullYear(); if (y < 100) y += 2000;
+  const mo = Number(m[2]), d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return [`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`, m[4].trim() || '휴일'];
+}
+function holidayName(dt) {
+  const k = iso(dt);
+  for (const line of state.holidays || []) { const h = parseHolidayLine(line); if (h && h[0] === k) return h[1]; }
+  return HOLIDAYS[k] || '';
+}
+
 // ---------- 그리기 ----------
 function render() {
   $('start').value = state.start;
@@ -302,6 +352,7 @@ function render() {
   $('printColors').checked = state.printColors;
   document.body.classList.toggle('plain', !state.printColors);
   if (document.activeElement !== $('exclude')) $('exclude').value = state.exclude.join('\n');
+  if (document.activeElement !== $('holidays')) $('holidays').value = (state.holidays || []).join('\n');
   $('resetDates').hidden = !Object.keys(state.overrides).length;
 
   const pages = $('pages'); pages.innerHTML = '';
@@ -371,9 +422,9 @@ function weekTable(w, month) {
   // 요일은 용지 맨 위에 한 번만, 주마다는 날짜만
   let h = COLS + '<thead><tr class="hd"><th></th>';
   DAYS.forEach((day, d) => {
-    const dt = dateOf(w, d), ovr = !!state.overrides[`${w}-${d}`];
+    const dt = dateOf(w, d), ovr = !!state.overrides[`${w}-${d}`], hol = holidayName(dt);
     h += `<th><div class="cell">` +
-      `<button class="date${dt.getUTCMonth() !== month ? ' out' : ''}${ovr ? ' ovr' : ''}" data-w="${w}" data-d="${d}" aria-label="${md(dt)} ${day}요일" title="${ovr ? '수정된 날짜 · ' : ''}눌러서 날짜 수정">${md(dt)}</button></div></th>`;
+      `<button class="date${dt.getUTCMonth() !== month ? ' out' : ''}${ovr ? ' ovr' : ''}${hol ? ' hol' : ''}" data-w="${w}" data-d="${d}" aria-label="${md(dt)} ${day}요일${hol ? ' ' + esc(hol) : ''}" title="${hol ? esc(hol) + ' · ' : ''}${ovr ? '수정된 날짜 · ' : ''}눌러서 날짜 수정">${md(dt)}</button></div></th>`;
   });
   h += '</tr></thead><tbody>';
   MEALS.forEach((meal, m) => {
@@ -393,6 +444,7 @@ function weekTable(w, month) {
 }
 
 // ---------- 중복 ----------
+let dupFocus = null;   // 목록에서 고른 음식 (그 음식만 색 표시, 저장하지 않음)
 // 서로 잘 구분되는 연한 색 12가지, 그 이상은 색상환을 황금각으로 돌려 만듦 (검은 글씨가 잘 보이는 밝기)
 const FOOD_COLORS = ['#FFC4C4','#BFE3FF','#D4F5B0','#FFE0A3','#E3CCFF','#B5F0DA','#FFCCEB','#FFF3A3','#C9D3FF','#F3D3B8','#C4EEF0','#E6F0B0'];
 const foodColor = i => i < FOOD_COLORS.length ? FOOD_COLORS[i] : `hsl(${Math.round((i * 137.508) % 360)} 80% 85%)`;
@@ -414,22 +466,25 @@ function markDuplicates() {
 
   // 식단표에 먼저 나오는 음식부터 색을 줌 (새 중복이 뒤에 생겨도 앞 음식 색은 그대로)
   const order = it => ((it.w * 6 + it.d) * 3 + it.m) * 10 + Number(it.k.split('-')[3]);
-  const dups = [...groups.values()].filter(items => items.length > 1)
-    .map(items => items.sort((a, c) => order(a) - order(c)))
+  const dups = [...groups.entries()].filter(([, items]) => items.length > 1)
+    .map(([key, items]) => { items.sort((a, c) => order(a) - order(c)); items.key = key; return items; })
     .sort((a, c) => order(a[0]) - order(c[0]));
+  if (dupFocus && !dups.some(items => items.key === dupFocus)) dupFocus = null;   // 고른 음식이 더 이상 중복이 아니면 전체 보기로
+  $('dupAll').hidden = !dupFocus;
+  $('dupHint').textContent = dupFocus ? '고른 음식만 색이 표시되고 있어요.' : '음식을 누르면 그것만 색이 표시돼요.';
   const list = [];
   dups.forEach((items, gi) => {
-    const color = foodColor(gi);
+    const color = foodColor(gi), show = !dupFocus || items.key === dupFocus;
     let worst = 'd-all';
     items.forEach(it => {
       const cls = items.some(o => o !== it && o.w === it.w && o.d === it.d) ? 'd-day'
         : items.some(o => o !== it && o.w === it.w) ? 'd-week' : 'd-all';
       if (cls === 'd-day' || (cls === 'd-week' && worst === 'd-all')) worst = cls;
-      const el = $('c' + it.k); if (!el) return;
+      const el = $('c' + it.k); if (!el || !show) return;
       if (food) { el.classList.add('d-food'); el.style.setProperty('--food', color); if (cls === 'd-day') el.classList.add('same-day'); }
       else el.classList.add(cls);
     });
-    list.push({ name: items[0].label, items, worst, color });
+    list.push({ name: items[0].label, key: items.key, items, worst, color });
   });
   const rank = { 'd-day': 0, 'd-week': 1, 'd-all': 2 };
   list.sort((a, b) => rank[a.worst] - rank[b.worst] || b.items.length - a.items.length || a.name.localeCompare(b.name, 'ko'));
@@ -441,7 +496,11 @@ function markDuplicates() {
     const where = g.items.map(it => `${short(dateOf(it.w, it.d))} ${MEALS[it.m]}`).join(', ');
     const sw = food ? `<span class="sw${g.worst === 'd-day' ? ' same-day' : ''}" style="background:${g.color}"></span>` : `<span class="sw" style="background:${rangeColor[g.worst]}"></span>`;
     b.innerHTML = `${sw}<span>${esc(g.name)}${g.worst === 'd-day' ? '<span class="tag">같은 날</span>' : ''}</span><span class="n">${g.items.length}회</span><span class="where">${where}</span>`;
+    b.setAttribute('aria-pressed', String(dupFocus === g.key));
     b.onclick = () => {
+      dupFocus = dupFocus === g.key ? null : g.key;   // 같은 음식을 다시 누르면 전체 보기
+      markDuplicates();
+      if (!dupFocus) return;
       g.items.forEach((it, i) => { const el = $('c' + it.k); if (!el) return;
         el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
         if (i === 0) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
@@ -558,6 +617,8 @@ $('perPage').addEventListener('change', e => { const v = e.target.value; state.p
 $('lines').addEventListener('change', e => { state.lines = Number(e.target.value); save(); render(); });
 $('printColors').addEventListener('change', e => { state.printColors = e.target.checked; document.body.classList.toggle('plain', !state.printColors); save(); });
 $('exclude').addEventListener('input', e => { state.exclude = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); markDuplicates(); save(); });
+$('holidays').addEventListener('input', e => { state.holidays = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); render(); save(); });
+$('dupAll').addEventListener('click', () => { dupFocus = null; markDuplicates(); });
 $('resetDates').addEventListener('click', () => { state.overrides = {}; save(); render(); });
 $('printBtn').addEventListener('click', () => window.print());
 
