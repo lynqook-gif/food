@@ -43,6 +43,13 @@ input[type=checkbox]{accent-color:var(--accent)}
 .field input,.field select,textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel)}
 .check{display:flex;gap:8px;align-items:center;font-size:13px}
 .hint{margin:0;color:var(--muted);font-size:12px}
+.box>h2+.hint,.boxhead+.hint{margin-top:-4px;line-height:1.45}
+.boxhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.boxhead .check{font-size:12.5px}
+.guide summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
+.guide ol{margin:0;padding-left:18px;font-size:12.5px;line-height:1.6}
+.off{opacity:.45;pointer-events:none}
+[hidden]{display:none!important}
 textarea{min-height:88px;resize:vertical;font:13px/1.5 var(--ui)}
 .legend{display:grid;gap:4px;font-size:13px}
 .legend span{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.12)}
@@ -152,10 +159,20 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 
 <div class="wrap">
   <aside class="side">
+    <details class="box guide" id="guide">
+      <summary>사용 방법</summary>
+      <ol>
+        <li><b>기간</b>에서 시작일을 고르면 날짜가 자동으로 채워져요.</li>
+        <li>표에 식단을 바로 입력하거나 <b>엑셀로 입력</b>을 이용하세요.</li>
+        <li><b>중복 표시</b>에서 겹치는 음식을 확인하고 고치세요.</li>
+        <li>위쪽 <b>PDF 저장·인쇄</b>로 출력하세요.</li>
+      </ol>
+      <p class="hint">입력한 내용은 이 브라우저에 자동 저장돼요. 다른 PC에서 이어 하려면 <b>파일로 저장</b>한 뒤 그 파일을 불러오세요.</p>
+    </details>
     <section class="box">
       <h2>기간</h2>
+      <p class="hint">고른 날짜가 있는 주의 월요일부터 채워져요. 표의 날짜를 누르면 하루씩 고칠 수 있어요.</p>
       <div class="field"><label for="start">시작일</label><input type="date" id="start"></div>
-      <p class="hint">아무 날짜나 고르면 그 주 월요일부터 날짜가 채워집니다. 표의 날짜를 누르면 하루씩 고칠 수 있어요.</p>
       <div class="field"><label for="weeks">주 수</label><select id="weeks"></select></div>
       <div class="field"><label for="title">제목</label><input type="text" id="title"></div>
       <div class="field"><label>제목 정렬</label>
@@ -166,13 +183,14 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
     </section>
     <section class="box">
       <h2>엑셀로 입력</h2>
+      <p class="hint">서식을 받아 식단을 적고 저장한 뒤 올리면 표에 그대로 들어가요. 서식에는 지금 시작일과 제외 음식이 들어 있어요.</p>
       <button class="btn" id="xlTemplate" type="button">① 엑셀 서식 받기</button>
-      <p class="hint">위 시작일과 제외 음식이 들어간 서식이에요. 엑셀에서 식단을 적고 저장한 뒤 올리세요. 날짜는 서식의 '설정' 시트에서도 바꿀 수 있어요.</p>
       <button class="btn primary" id="xlUpload" type="button">② 엑셀 업로드</button>
       <p class="msg" id="xlMsg" aria-live="polite"></p>
     </section>
     <section class="box">
       <h2>인쇄</h2>
+      <p class="hint">용지와 줄 수를 고른 뒤 위쪽 <b>PDF 저장·인쇄</b>를 누르세요.</p>
       <div class="field"><label for="perPage">한 장에</label>
         <select id="perPage"><option value="all">한 달 전체 (A4 세로)</option><option value="2">2주씩 (A4 가로)</option><option value="1">1주씩 (A4 가로)</option></select></div>
       <div class="field"><label for="lines">끼니당 줄</label>
@@ -182,6 +200,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
     </section>
     <section class="box">
       <h2>음식 일괄 넣기</h2>
+      <p class="hint">쌀밥·우유처럼 자주 나오는 음식을 고른 요일에 한 번에 넣거나 빼요.</p>
       <div class="field"><label for="bulkName">음식</label><input type="text" id="bulkName" placeholder="예: 쌀밥"></div>
       <div class="field"><label for="bulkMeal">끼니</label>
         <select id="bulkMeal"><option value="all">조식·중식·석식 전체</option><option value="0">조식만</option><option value="1">중식만</option><option value="2">석식만</option></select></div>
@@ -197,7 +216,8 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <p class="msg" id="bulkMsg" aria-live="polite"></p>
     </section>
     <section class="box">
-      <h2>중복 표시</h2>
+      <div class="boxhead"><h2>중복 표시</h2><label class="check"><input type="checkbox" id="dupOn"> 색 표시</label></div>
+      <p class="hint">겹치는 음식을 색으로 보여줘요. 체크를 끄면 색 없이 목록만 보여요.</p>
       <div class="seg" id="dupMode" role="group" aria-label="중복 색 구분" style="grid-template-columns:1fr 1fr">
         <button type="button" data-m="food">음식별 색</button><button type="button" data-m="range">범위별 색</button>
       </div>
@@ -210,21 +230,22 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
         <div><span style="background:var(--dup-week)"></span>같은 주 겹침</div>
         <div><span style="background:var(--dup-all)"></span>전체 기간에서 겹침</div>
       </div>
-      <div class="duphead"><span id="dupHint">음식을 누르면 그것만 색이 표시돼요.</span><button type="button" id="dupAll" hidden>전체 보기</button></div>
+      <div class="duphead"><span id="dupHint"></span><button type="button" id="dupAll" hidden>전체 보기</button></div>
       <ul class="duplist" id="duplist"></ul>
     </section>
     <section class="box">
       <h2>중복 검사 제외 음식</h2>
+      <p class="hint">밥·김치처럼 매일 나오는 음식은 여기 적으면 검사에서 빠져요. 띄어쓰기와 알레르기 번호(예: 5.6.13)는 무시하고 비교해요.</p>
       <textarea id="exclude" aria-label="중복 검사 제외 음식, 한 줄에 하나"></textarea>
-      <p class="hint">한 줄에 하나씩. 띄어쓰기와 끝에 붙은 알레르기 번호(예: 5.6.13)는 무시하고 비교합니다.</p>
     </section>
     <section class="box">
       <h2>공휴일 직접 추가</h2>
-      <textarea id="holidays" aria-label="직접 추가할 공휴일, 한 줄에 하나" placeholder="2026-10-15 개교기념일&#10;2026-11-19 재량휴업일"></textarea>
-      <p class="hint">한 줄에 하나씩 <b>날짜 이름</b>으로 적으면 빨간색으로 표시돼요. 2025~2028년 법정 공휴일·대체공휴일은 이미 들어 있어요. 날짜는 2026-10-15, 2026.10.15, 26.10.15 모두 됩니다.</p>
+      <p class="hint">법정 공휴일·대체공휴일(2025~2028)은 이미 빨간색으로 표시돼요. 개교기념일·재량휴업일 등은 한 줄에 하나씩 <b>날짜 이름</b>으로 적으세요.</p>
+      <textarea id="holidays" aria-label="직접 추가할 공휴일, 한 줄에 하나" placeholder="2026-10-15 개교기념일&#10;11.19 재량휴업일"></textarea>
     </section>
     <footer class="credit">
-      <span>제작 <b>정주고등학교 박지은</b></span>
+      <span>제작자: <b>정주고등학교 박지은</b></span>
+      <span>문의: <a href="mailto:ican6363@naver.com">ican6363@naver.com</a></span>
     </footer>
   </aside>
 
@@ -269,7 +290,7 @@ function sample() {
 const today = new Date();
 const firstNext = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1));
 const defaults = () => ({
-  start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', lines: 7, printColors: false,
+  start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', dupOn: true, lines: 7, printColors: false,
   overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], holidays: [], sample: true, v: 2,
 });
 
@@ -459,9 +480,12 @@ function markDuplicates() {
     if (!groups.has(n)) groups.set(n, []);
     groups.get(n).push({ k, w, d, m: Number(k.split('-')[2]), label: v.trim() });
   }
-  const food = state.dupMode !== 'range';
+  const food = state.dupMode !== 'range', on = state.dupOn !== false;
+  if (!on) dupFocus = null;
   document.querySelectorAll('.lines input').forEach(el => { el.classList.remove('d-day','d-week','d-all','d-food','same-day'); el.style.removeProperty('--food'); });
-  $('legendFood').hidden = !food; $('legendRange').hidden = food;
+  $('dupOn').checked = on;
+  $('dupMode').classList.toggle('off', !on);
+  $('legendFood').hidden = !on || !food; $('legendRange').hidden = !on || food;
   document.querySelectorAll('#dupMode button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'food') === food));
 
   // 식단표에 먼저 나오는 음식부터 색을 줌 (새 중복이 뒤에 생겨도 앞 음식 색은 그대로)
@@ -471,10 +495,10 @@ function markDuplicates() {
     .sort((a, c) => order(a[0]) - order(c[0]));
   if (dupFocus && !dups.some(items => items.key === dupFocus)) dupFocus = null;   // 고른 음식이 더 이상 중복이 아니면 전체 보기로
   $('dupAll').hidden = !dupFocus;
-  $('dupHint').textContent = dupFocus ? '고른 음식만 색이 표시되고 있어요.' : '음식을 누르면 그것만 색이 표시돼요.';
+  $('dupHint').textContent = !on ? '음식을 누르면 위치로 이동해요.' : dupFocus ? '고른 음식만 색이 표시되고 있어요.' : '음식을 누르면 그것만 색이 표시돼요.';
   const list = [];
   dups.forEach((items, gi) => {
-    const color = foodColor(gi), show = !dupFocus || items.key === dupFocus;
+    const color = foodColor(gi), show = on && (!dupFocus || items.key === dupFocus);
     let worst = 'd-all';
     items.forEach(it => {
       const cls = items.some(o => o !== it && o.w === it.w && o.d === it.d) ? 'd-day'
@@ -494,13 +518,16 @@ function markDuplicates() {
   list.forEach(g => {
     const li = document.createElement('li'), b = document.createElement('button');
     const where = g.items.map(it => `${short(dateOf(it.w, it.d))} ${MEALS[it.m]}`).join(', ');
-    const sw = food ? `<span class="sw${g.worst === 'd-day' ? ' same-day' : ''}" style="background:${g.color}"></span>` : `<span class="sw" style="background:${rangeColor[g.worst]}"></span>`;
+    const sw = !on ? '<span class="sw" style="background:transparent"></span>'
+      : food ? `<span class="sw${g.worst === 'd-day' ? ' same-day' : ''}" style="background:${g.color}"></span>` : `<span class="sw" style="background:${rangeColor[g.worst]}"></span>`;
     b.innerHTML = `${sw}<span>${esc(g.name)}${g.worst === 'd-day' ? '<span class="tag">같은 날</span>' : ''}</span><span class="n">${g.items.length}회</span><span class="where">${where}</span>`;
     b.setAttribute('aria-pressed', String(dupFocus === g.key));
     b.onclick = () => {
-      dupFocus = dupFocus === g.key ? null : g.key;   // 같은 음식을 다시 누르면 전체 보기
-      markDuplicates();
-      if (!dupFocus) return;
+      if (on) {
+        dupFocus = dupFocus === g.key ? null : g.key;   // 같은 음식을 다시 누르면 전체 보기
+        markDuplicates();
+        if (!dupFocus) return;
+      }
       g.items.forEach((it, i) => { const el = $('c' + it.k); if (!el) return;
         el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
         if (i === 0) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
@@ -619,6 +646,7 @@ $('printColors').addEventListener('change', e => { state.printColors = e.target.
 $('exclude').addEventListener('input', e => { state.exclude = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); markDuplicates(); save(); });
 $('holidays').addEventListener('input', e => { state.holidays = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); render(); save(); });
 $('dupAll').addEventListener('click', () => { dupFocus = null; markDuplicates(); });
+$('dupOn').addEventListener('change', e => { state.dupOn = e.target.checked; save(); markDuplicates(); });
 $('resetDates').addEventListener('click', () => { state.overrides = {}; save(); render(); });
 $('printBtn').addEventListener('click', () => window.print());
 
