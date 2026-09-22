@@ -1,0 +1,694 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>교행e의 식단표 편집기</title>
+<meta name="color-scheme" content="only light">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+<style>
+/* 다크 모드여도 항상 흰 화면 (브라우저 강제 다크도 막음) */
+:root{
+  color-scheme:only light;
+  --ground:#F4F5F4; --panel:#FFFFFF; --ink:#1B1F1D; --muted:#66706A; --line:#D5DAD6;
+  --accent:#2F6B4F; --accent-ink:#FFFFFF; --accent-soft:#E3EFE8;
+  --dup-day:#FFB3AD; --dup-week:#FFD59A; --dup-all:#FFF1A1;
+  --paper-shadow:0 1px 2px rgba(20,40,30,.06),0 6px 20px rgba(20,40,30,.08);
+  --ui:"Pretendard Variable",Pretendard,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.5 var(--ui);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+input[type=checkbox]{accent-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- 상단 바 ---------- */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 16px}
+.bar h1{margin:0;font:700 18px/1.2 var(--ui);letter-spacing:-.02em;margin-right:auto}
+.bar h1 small{font:400 12px var(--ui);color:var(--muted);margin-left:8px}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{border-color:#C2473B;color:#C2473B}
+.btn.sm{padding:2px 8px;font-size:12px}
+
+/* ---------- 레이아웃 ---------- */
+.wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;padding:16px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.side{display:flex;flex-direction:column;gap:12px;align-self:start;position:sticky;top:72px}
+@media (max-width:900px){.side{position:static}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.box h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+.field{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:8px}
+.field label{color:var(--muted);font-size:13px}
+.field input,.field select,textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel)}
+.check{display:flex;gap:8px;align-items:center;font-size:13px}
+.hint{margin:0;color:var(--muted);font-size:12px}
+textarea{min-height:88px;resize:vertical;font:13px/1.5 var(--ui)}
+.legend{display:grid;gap:4px;font-size:13px}
+.legend span{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.12)}
+.duplist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto}
+.duplist button{width:100%;text-align:left;border:0;background:none;padding:4px 6px;border-radius:4px;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:baseline}
+.duplist button:hover{background:var(--accent-soft)}
+.duplist .sw{width:10px;height:10px;border-radius:2px;align-self:center;border:1px solid rgba(0,0,0,.12)}
+.duplist .sw.same-day{box-shadow:inset 3px 0 0 #D2382B}
+.duplist .tag{font-size:11px;color:#B3261E;font-weight:600;margin-left:4px}
+.duplist .where{grid-column:2/4;color:var(--muted);font-size:11.5px}
+.duplist .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.notice{background:var(--accent-soft);border-radius:8px;padding:8px 12px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ---------- 용지 (항상 흰 종이) ---------- */
+.pages{display:flex;flex-direction:column;gap:20px;min-width:0}
+.scroller{overflow-x:auto;padding-bottom:4px}
+/* --lh(한 줄 높이)·--fs(글씨)·--hd(날짜 줄 높이)는 JS가 용지에 딱 맞게 계산해서 넣음 */
+.page{--lh:14px;--fs:11px;--hd:19px;
+  forced-color-adjust:none;overflow:hidden;
+  width:297mm;height:210mm;padding:8mm 9mm;background:#fff;color:#111;box-shadow:var(--paper-shadow);
+  display:flex;flex-direction:column;gap:2mm;font-family:var(--ui);margin-inline:auto}
+.page.portrait{width:210mm;height:297mm;padding:7mm 7mm}
+.ptitle{display:flex;align-items:baseline;justify-content:center;border-bottom:.6mm solid #111;padding-bottom:1.5mm;flex:none}
+.ptitle.left{justify-content:flex-start}
+.ptitle.right{justify-content:flex-end}
+.ptitle b{font:800 16pt/1 var(--ui);letter-spacing:-.02em}
+.page.portrait .ptitle b{font-size:14pt}
+.weeks{flex:none}
+table.wk{width:100%;border-collapse:collapse;table-layout:fixed;border:.5mm solid #111}
+table.wk+table.wk{border-top:0}
+table.wk col.lab{width:8mm}
+table.wk th,table.wk td{border:.2mm solid #555;padding:0}
+tr.hd>*{height:var(--hd);background:#F6F7F6;border-bottom:.45mm solid #111!important}
+tr.hd th{font-weight:600;font-size:calc(var(--fs)*1.08)}
+/* 용지 맨 위 요일 줄 (주마다 반복하지 않음) */
+tr.dayrow>*{height:var(--hd);background:#E4E9E5;border-bottom:.45mm solid #111!important;font-weight:700;font-size:calc(var(--fs)*1.2);letter-spacing:.1em}
+tr.dayrow th.sat{color:#1F4F9A}
+tr.hd .cell{display:flex;align-items:center;justify-content:center;height:var(--hd)}
+tr.hd .dn{flex:none;font-weight:500}
+th.sat .dn{color:#1F4F9A}
+table.wk tbody tr>*{border-bottom:.45mm solid #111}
+th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spacing:.3em;background:#F7F8F7}
+.date{height:100%;border:0;background:none;padding:0 .2em;font:inherit;font-weight:500;cursor:pointer;font-variant-numeric:tabular-nums;color:#111;position:relative}
+.date:hover{background:#DDEBE3}
+.date.out{color:#A5A5A5}
+.date.ovr{text-decoration:underline dotted #2F6B4F;text-underline-offset:2px}
+.date-edit{width:9em;height:100%;border:0;font:inherit;background:#E8F1EC;color:#111}
+.lines{display:flex;flex-direction:column}
+.lines input{height:var(--lh);border:0;width:100%;padding:0 .8mm;font-size:var(--fs);line-height:1;text-align:center;background:transparent;color:#111;min-width:0}
+.lines input:hover{background:#F4F7F5}
+.lines input:focus{outline:none;background:#E8F1EC}
+.lines input.d-all{background:var(--dup-all)}
+.lines input.d-week{background:var(--dup-week)}
+.lines input.d-day{background:var(--dup-day)}
+/* 음식별 색: 같은 음식은 같은 색, 같은 날 겹침은 왼쪽 빨간 줄 */
+.lines input.d-food{background:var(--food)}
+.lines input.d-food.same-day{box-shadow:inset .7mm 0 0 #D2382B}
+.lines input.flash{animation:flash 1.2s ease-out 2}
+@keyframes flash{50%{box-shadow:inset 0 0 0 .5mm #2F6B4F}}
+@media (prefers-reduced-motion:reduce){.lines input.flash{animation:none;box-shadow:inset 0 0 0 .5mm #2F6B4F}}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:5px 0;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.days{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.days label{display:flex;align-items:center;justify-content:center;gap:2px;font-size:12.5px;border:1px solid var(--line);border-radius:5px;padding:2px 0;cursor:pointer}
+.days input{accent-color:var(--accent);margin:0}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.row .btn{flex:1}
+.msg{margin:0;font-size:12.5px;color:var(--accent);min-height:1em}
+.credit{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px;padding:4px 2px}
+.credit b{color:var(--ink);font-weight:600}
+.credit a{color:var(--accent);font-weight:500;text-underline-offset:2px;word-break:break-all}
+
+/* ---------- 인쇄 (용지 방향은 JS가 #pageSize에 넣음) ---------- */
+@media print{
+  body{background:#fff}
+  .bar,.side,.notice{display:none!important}
+  .wrap{display:block;padding:0}
+  .pages{gap:0}
+  .scroller{overflow:visible;padding:0;zoom:1!important}
+  .page{box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  .scroller:last-child .page{break-after:auto;page-break-after:auto}
+  .date.ovr{text-decoration:none}
+  body.plain .lines input{background:transparent!important;box-shadow:none!important}
+  body:not(.plain) .page{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tr.hd>*,tr.dayrow>*,th.meal{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+<style id="pageSize">@page{size:A4 portrait;margin:0}</style>
+
+<header class="bar">
+  <h1>교행e의 식단표 편집기<small id="savedAt">자동 저장됨</small></h1>
+  <div class="actions">
+    <button class="btn primary" id="printBtn" title="인쇄 창에서 대상을 'PDF로 저장'으로 고르면 PDF 파일이 됩니다">PDF 저장 · 인쇄</button>
+    <button class="btn" id="exportBtn">파일로 저장</button>
+    <button class="btn" id="importBtn" title="식단표양식 엑셀(.xlsx) 또는 '파일로 저장'한 .json">엑셀·파일 불러오기</button>
+    <input type="file" id="importFile" accept=".xlsx,.xls,.json,application/json" hidden>
+    <button class="btn danger" id="clearBtn">메뉴 비우기</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="side">
+    <section class="box">
+      <h2>기간</h2>
+      <div class="field"><label for="start">시작일</label><input type="date" id="start"></div>
+      <p class="hint">아무 날짜나 고르면 그 주 월요일부터 날짜가 채워집니다. 표의 날짜를 누르면 하루씩 고칠 수 있어요.</p>
+      <div class="field"><label for="weeks">주 수</label><select id="weeks"></select></div>
+      <div class="field"><label for="title">제목</label><input type="text" id="title"></div>
+      <div class="field"><label>제목 정렬</label>
+        <div class="seg" id="titleAlign" role="group" aria-label="제목 정렬">
+          <button type="button" data-a="left">왼쪽</button><button type="button" data-a="center">가운데</button><button type="button" data-a="right">오른쪽</button>
+        </div></div>
+      <button class="btn sm" id="resetDates" hidden>날짜 수정 모두 되돌리기</button>
+    </section>
+    <section class="box">
+      <h2>엑셀로 입력</h2>
+      <button class="btn" id="xlTemplate" type="button">① 엑셀 서식 받기</button>
+      <p class="hint">위 시작일과 제외 음식이 들어간 서식이에요. 엑셀에서 식단을 적고 저장한 뒤 올리세요. 날짜는 서식의 '설정' 시트에서도 바꿀 수 있어요.</p>
+      <button class="btn primary" id="xlUpload" type="button">② 엑셀 업로드</button>
+      <p class="msg" id="xlMsg" aria-live="polite"></p>
+    </section>
+    <section class="box">
+      <h2>인쇄</h2>
+      <div class="field"><label for="perPage">한 장에</label>
+        <select id="perPage"><option value="all">한 달 전체 (A4 세로)</option><option value="2">2주씩 (A4 가로)</option><option value="1">1주씩 (A4 가로)</option></select></div>
+      <div class="field"><label for="lines">끼니당 줄</label>
+        <select id="lines"><option value="4">4줄</option><option value="5">5줄</option><option value="6">6줄</option><option value="7">7줄</option><option value="8">8줄</option></select></div>
+      <p class="hint" id="fitHint"></p>
+      <label class="check"><input type="checkbox" id="printColors"> 중복 색상도 인쇄하기</label>
+    </section>
+    <section class="box">
+      <h2>음식 일괄 넣기</h2>
+      <div class="field"><label for="bulkName">음식</label><input type="text" id="bulkName" placeholder="예: 쌀밥"></div>
+      <div class="field"><label for="bulkMeal">끼니</label>
+        <select id="bulkMeal"><option value="all">조식·중식·석식 전체</option><option value="0">조식만</option><option value="1">중식만</option><option value="2">석식만</option></select></div>
+      <div class="field"><label for="bulkPos">넣을 자리</label>
+        <select id="bulkPos"><option value="top">맨 위 (기존 메뉴는 아래로)</option><option value="empty">첫 번째 빈 줄</option><option value="bottom">맨 아래 줄</option></select></div>
+      <div class="days" id="bulkDays" role="group" aria-label="요일"></div>
+      <label class="check"><input type="checkbox" id="bulkMonth" checked> 이번 달 날짜만 (회색 날짜 제외)</label>
+      <div class="row">
+        <button class="btn primary" id="bulkAdd" type="button">넣기</button>
+        <button class="btn" id="bulkRemove" type="button">빼기</button>
+        <button class="btn" id="bulkUndo" type="button" hidden>되돌리기</button>
+      </div>
+      <p class="msg" id="bulkMsg" aria-live="polite"></p>
+    </section>
+    <section class="box">
+      <h2>중복 표시</h2>
+      <div class="seg" id="dupMode" role="group" aria-label="중복 색 구분" style="grid-template-columns:1fr 1fr">
+        <button type="button" data-m="food">음식별 색</button><button type="button" data-m="range">범위별 색</button>
+      </div>
+      <div class="legend" id="legendFood">
+        <div>같은 음식은 같은 색으로 칠해져요.</div>
+        <div><span style="background:#fff;box-shadow:inset 4px 0 0 #D2382B"></span>왼쪽 빨간 줄 = 같은 날 겹침</div>
+      </div>
+      <div class="legend" id="legendRange">
+        <div><span style="background:var(--dup-day)"></span>같은 날 겹침</div>
+        <div><span style="background:var(--dup-week)"></span>같은 주 겹침</div>
+        <div><span style="background:var(--dup-all)"></span>전체 기간에서 겹침</div>
+      </div>
+      <ul class="duplist" id="duplist"></ul>
+    </section>
+    <section class="box">
+      <h2>중복 검사 제외 음식</h2>
+      <textarea id="exclude" aria-label="중복 검사 제외 음식, 한 줄에 하나"></textarea>
+      <p class="hint">한 줄에 하나씩. 띄어쓰기와 끝에 붙은 알레르기 번호(예: 5.6.13)는 무시하고 비교합니다.</p>
+    </section>
+    <footer class="credit">
+      <span>제작 <b>정주고등학교 박지은</b></span>
+    </footer>
+  </aside>
+
+  <main class="pages" id="pages"></main>
+</div>
+
+<!-- 엑셀 업로드 서식 (build.js가 식단표_자동.xlsx를 base64로 넣음) -->
+<script id="tplData" type="application/octet-stream">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</script>
+<script>
+(() => {
+const DAYS = ['월','화','수','목','금','토'];
+const MEALS = ['조식','중식','석식'];
+const KEY = 'sikdan.v1';
+const $ = id => document.getElementById(id);
+
+// ---------- 날짜 도우미 (UTC 기준) ----------
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(Date.UTC(y, m-1, d)); };
+const iso = d => d.toISOString().slice(0,10);
+const addDays = (d, n) => new Date(d.getTime() + n*86400000);
+// 표는 월~토라서 일요일을 고르면 다음 날(월)부터 시작
+const mondayOf = d => d.getUTCDay() === 0 ? addDays(d, 1) : addDays(d, -((d.getUTCDay() + 6) % 7));
+const md = d => `${d.getUTCMonth()+1}월 ${d.getUTCDate()}일`;
+const short = d => `${d.getUTCMonth()+1}/${d.getUTCDate()}`;
+
+// ---------- 예시 데이터 ----------
+function sample() {
+  const W0 = [
+    [['쌀밥','북엇국','계란말이','시금치나물','배추김치'],['잡곡밥','된장찌개','제육볶음','콩나물무침','깍두기','요구르트'],['쌀밥','미역국','고등어구이','감자조림','배추김치']],
+    [['쌀밥','순두부국','비엔나볶음','멸치볶음','배추김치'],['카레라이스','유부장국','치킨너겟','양배추샐러드','깍두기'],['쌀밥','김치찌개','떡갈비','숙주나물','배추김치']],
+    [['쌀밥','콩나물국','스팸구이','김구이','배추김치'],['잡곡밥','쇠고기무국','닭갈비','도라지무침','깍두기','사과'],['쌀밥','된장찌개','오징어볶음','계란찜','배추김치']],
+    [['쌀밥','계란국','어묵볶음','시금치나물','배추김치'],['짜장밥','짬뽕국','군만두','단무지무침','깍두기'],['쌀밥','계란국','불고기','잡채','배추김치']],
+    [['쌀밥','황태국','소시지야채볶음','김구이','배추김치'],['볶음밥','팽이버섯된장국','탕수육','오이무침','깍두기','요구르트'],['쌀밥','육개장','동그랑땡','연근조림','배추김치']],
+    [['쌀밥','떡국','메추리알장조림','배추김치'],['잔치국수','김밥','단무지','과일'],[]],
+  ];
+  const W1 = { 0:['잡곡밥','순두부찌개','제육볶음','브로콜리숙회','깍두기'], 1:['카레라이스','맑은어묵국','돈가스','마카로니샐러드','깍두기'], 2:['잡곡밥','부대찌개','계란말이','무생채','깍두기'] };
+  const cells = {};
+  W0.forEach((day, d) => day.forEach((meal, m) => meal.forEach((v, i) => cells[`0-${d}-${m}-${i}`] = v)));
+  Object.entries(W1).forEach(([d, list]) => list.forEach((v, i) => cells[`1-${d}-1-${i}`] = v));
+  return cells;
+}
+
+const today = new Date();
+const firstNext = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1));
+const defaults = () => ({
+  start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', lines: 7, printColors: false,
+  overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], sample: true, v: 2,
+});
+
+let state = defaults();
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.start) state = Object.assign(defaults(), s); } catch (e) {}
+if (state.v !== 2) { state.perPage = 'all'; state.v = 2; }   // 이전 버전 저장분은 새 기본 인쇄(한 달 세로)로
+const LINES = () => Number(state.lines) || 7;
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); $('savedAt').textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}); }
+    catch (e) { $('savedAt').textContent = '브라우저 저장 불가 · "파일로 저장"을 이용하세요'; }
+  }, 300);
+}
+
+// ---------- 계산 ----------
+const startDate = () => parse(state.start);
+const monday = () => mondayOf(startDate());
+function autoWeeks() {
+  const s = startDate(), last = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth() + 1, 0));
+  return Math.min(6, Math.ceil(((last - monday()) / 86400000 + 1) / 7));
+}
+const weekCount = () => state.weeks === 'auto' ? autoWeeks() : Number(state.weeks);
+const autoDate = (w, d) => addDays(monday(), w*7 + d);
+const dateOf = (w, d) => state.overrides[`${w}-${d}`] ? parse(state.overrides[`${w}-${d}`]) : autoDate(w, d);
+const autoTitle = () => { const s = startDate(); return `${s.getUTCFullYear()}년 ${s.getUTCMonth()+1}월 식단표`; };
+const norm = v => (v || '').replace(/[\s\d.,*()]+$/,'').replace(/\s+/g,'');
+
+// ---------- 그리기 ----------
+function render() {
+  $('start').value = state.start;
+  const ac = autoWeeks();
+  $('weeks').innerHTML = `<option value="auto">자동 (${ac}주)</option>` + [1,2,3,4,5,6].map(n => `<option value="${n}">${n}주</option>`).join('');
+  $('weeks').value = String(state.weeks);
+  $('title').value = state.title; $('title').placeholder = autoTitle();
+  document.querySelectorAll('#titleAlign button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === state.titleAlign));
+  $('perPage').value = String(state.perPage);
+  $('lines').value = String(LINES());
+  $('printColors').checked = state.printColors;
+  document.body.classList.toggle('plain', !state.printColors);
+  if (document.activeElement !== $('exclude')) $('exclude').value = state.exclude.join('\n');
+  $('resetDates').hidden = !Object.keys(state.overrides).length;
+
+  const pages = $('pages'); pages.innerHTML = '';
+  if (state.sample) {
+    const n = document.createElement('div'); n.className = 'notice';
+    n.innerHTML = '예시 식단이 들어 있어요. 입력을 시작하거나 <b>메뉴 비우기</b>로 지우세요.';
+    pages.appendChild(n);
+  }
+  const W = weekCount(), all = state.perPage === 'all', per = all ? W : Number(state.perPage);
+  const month = startDate().getUTCMonth(), title = state.title || autoTitle();
+  $('pageSize').textContent = `@page{size:A4 ${all ? 'portrait' : 'landscape'};margin:0}`;
+  for (let p = 0; p * per < W; p++) {
+    const sc = document.createElement('div'); sc.className = 'scroller';
+    const page = document.createElement('section'); page.className = 'page' + (all ? ' portrait' : '');
+    const ws = [], we = Math.min(W, (p+1)*per);
+    for (let w = p*per; w < we; w++) ws.push(w);
+    page.dataset.n = ws.length; page.dataset.per = per;
+    page.innerHTML = `<div class="ptitle ${state.titleAlign}"><b>${esc(title)}</b></div><div class="weeks"></div>`;
+    const box = page.querySelector('.weeks');
+    box.appendChild(dayHeader());
+    ws.forEach(w => box.appendChild(weekTable(w, month)));
+    sc.appendChild(page); pages.appendChild(sc);
+  }
+  fit();
+  markDuplicates();
+}
+
+// 주 수와 줄 수에 맞춰 한 줄 높이를 계산해 용지를 빈틈없이 채움
+// (표 높이는 줄 높이에 비례하므로 두 번 재서 기울기로 바로 구함)
+const MAX_LH = 34;   // 1주 가로일 때 너무 커지지 않게 (약 9mm)
+function fit() {
+  const pages = [...document.querySelectorAll('.page')]; if (!pages.length) return;
+  const scs = document.querySelectorAll('.scroller');
+  scs.forEach(s => s.style.zoom = 1);
+  const setLh = (pg, v) => { pg.style.setProperty('--lh', v + 'px'); pg.style.setProperty('--fs', Math.min(v * .78, 15) + 'px'); pg.style.setProperty('--hd', (Math.min(v * .78, 15) * 1.9) + 'px'); };
+  const p = pages[0], wk = p.querySelector('.weeks'), cs = getComputedStyle(p);
+  const scale = Number(p.dataset.per) / Number(p.dataset.n);   // 첫 장이 덜 찼으면 꽉 찬 경우로 환산
+  setLh(p, 10); const h1 = wk.offsetHeight * scale;
+  setLh(p, 20); const h2 = wk.offsetHeight * scale;
+  const slope = (h2 - h1) / 10, fixed = h1 - slope * 10;
+  const avail = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+    - p.querySelector('.ptitle').offsetHeight - parseFloat(cs.rowGap || cs.gap || 0) - 1;
+  const lh = Math.min(MAX_LH, Math.floor(((avail - fixed) / slope) * 100) / 100);
+  pages.forEach(pg => setLh(pg, lh));
+  const pt = (lh * .78 * .75).toFixed(1);
+  $('fitHint').textContent = `인쇄 글씨 크기 약 ${pt}pt` + (pt < 6.5 ? ' · 작으면 끼니당 줄 수를 줄여 보세요' : '');
+  zoomPages();
+}
+// 화면에서는 용지를 영역 너비에 맞춰 확대 (인쇄에는 영향 없음)
+function zoomPages() {
+  const main = $('pages'), p = document.querySelector('.page'); if (!p) return;
+  const z = Math.max(1, Math.min(1.6, (main.clientWidth - 8) / p.offsetWidth));
+  document.querySelectorAll('.scroller').forEach(s => s.style.zoom = z.toFixed(3));
+}
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(zoomPages, 150); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const COLS = '<colgroup><col class="lab">' + DAYS.map(() => '<col>').join('') + '</colgroup>';
+function dayHeader() {
+  const t = document.createElement('table'); t.className = 'wk';
+  t.innerHTML = COLS + '<thead><tr class="dayrow"><th></th>' + DAYS.map((d, i) => `<th class="${i === 5 ? 'sat' : ''}">${d}</th>`).join('') + '</tr></thead>';
+  return t;
+}
+function weekTable(w, month) {
+  const t = document.createElement('table'); t.className = 'wk';
+  // 요일은 용지 맨 위에 한 번만, 주마다는 날짜만
+  let h = COLS + '<thead><tr class="hd"><th></th>';
+  DAYS.forEach((day, d) => {
+    const dt = dateOf(w, d), ovr = !!state.overrides[`${w}-${d}`];
+    h += `<th><div class="cell">` +
+      `<button class="date${dt.getUTCMonth() !== month ? ' out' : ''}${ovr ? ' ovr' : ''}" data-w="${w}" data-d="${d}" aria-label="${md(dt)} ${day}요일" title="${ovr ? '수정된 날짜 · ' : ''}눌러서 날짜 수정">${md(dt)}</button></div></th>`;
+  });
+  h += '</tr></thead><tbody>';
+  MEALS.forEach((meal, m) => {
+    h += `<tr><th class="meal">${meal}</th>`;
+    DAYS.forEach((_, d) => {
+      h += '<td><div class="lines">';
+      for (let i = 0; i < LINES(); i++) {
+        const k = `${w}-${d}-${m}-${i}`;
+        h += `<input id="c${k}" data-k="${k}" value="${esc(state.cells[k] || '')}" aria-label="${w+1}주 ${DAYS[d]} ${meal} ${i+1}번째" autocomplete="off">`;
+      }
+      h += '</div></td>';
+    });
+    h += '</tr>';
+  });
+  t.innerHTML = h + '</tbody>';
+  return t;
+}
+
+// ---------- 중복 ----------
+// 서로 잘 구분되는 연한 색 12가지, 그 이상은 색상환을 황금각으로 돌려 만듦 (검은 글씨가 잘 보이는 밝기)
+const FOOD_COLORS = ['#FFC4C4','#BFE3FF','#D4F5B0','#FFE0A3','#E3CCFF','#B5F0DA','#FFCCEB','#FFF3A3','#C9D3FF','#F3D3B8','#C4EEF0','#E6F0B0'];
+const foodColor = i => i < FOOD_COLORS.length ? FOOD_COLORS[i] : `hsl(${Math.round((i * 137.508) % 360)} 80% 85%)`;
+function markDuplicates() {
+  const W = weekCount(), ex = new Set(state.exclude.map(norm).filter(Boolean));
+  const groups = new Map();
+  for (const [k, v] of Object.entries(state.cells)) {
+    const [w, d, , i] = k.split('-').map(Number);
+    if (w >= W || i >= LINES()) continue;
+    const n = norm(v);
+    if (!n || ex.has(n)) continue;
+    if (!groups.has(n)) groups.set(n, []);
+    groups.get(n).push({ k, w, d, m: Number(k.split('-')[2]), label: v.trim() });
+  }
+  const food = state.dupMode !== 'range';
+  document.querySelectorAll('.lines input').forEach(el => { el.classList.remove('d-day','d-week','d-all','d-food','same-day'); el.style.removeProperty('--food'); });
+  $('legendFood').hidden = !food; $('legendRange').hidden = food;
+  document.querySelectorAll('#dupMode button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'food') === food));
+
+  // 식단표에 먼저 나오는 음식부터 색을 줌 (새 중복이 뒤에 생겨도 앞 음식 색은 그대로)
+  const order = it => ((it.w * 6 + it.d) * 3 + it.m) * 10 + Number(it.k.split('-')[3]);
+  const dups = [...groups.values()].filter(items => items.length > 1)
+    .map(items => items.sort((a, c) => order(a) - order(c)))
+    .sort((a, c) => order(a[0]) - order(c[0]));
+  const list = [];
+  dups.forEach((items, gi) => {
+    const color = foodColor(gi);
+    let worst = 'd-all';
+    items.forEach(it => {
+      const cls = items.some(o => o !== it && o.w === it.w && o.d === it.d) ? 'd-day'
+        : items.some(o => o !== it && o.w === it.w) ? 'd-week' : 'd-all';
+      if (cls === 'd-day' || (cls === 'd-week' && worst === 'd-all')) worst = cls;
+      const el = $('c' + it.k); if (!el) return;
+      if (food) { el.classList.add('d-food'); el.style.setProperty('--food', color); if (cls === 'd-day') el.classList.add('same-day'); }
+      else el.classList.add(cls);
+    });
+    list.push({ name: items[0].label, items, worst, color });
+  });
+  const rank = { 'd-day': 0, 'd-week': 1, 'd-all': 2 };
+  list.sort((a, b) => rank[a.worst] - rank[b.worst] || b.items.length - a.items.length || a.name.localeCompare(b.name, 'ko'));
+  const rangeColor = { 'd-day': 'var(--dup-day)', 'd-week': 'var(--dup-week)', 'd-all': 'var(--dup-all)' };
+  const ul = $('duplist');
+  ul.innerHTML = list.length ? '' : '<li class="hint">겹치는 음식이 없어요.</li>';
+  list.forEach(g => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    const where = g.items.map(it => `${short(dateOf(it.w, it.d))} ${MEALS[it.m]}`).join(', ');
+    const sw = food ? `<span class="sw${g.worst === 'd-day' ? ' same-day' : ''}" style="background:${g.color}"></span>` : `<span class="sw" style="background:${rangeColor[g.worst]}"></span>`;
+    b.innerHTML = `${sw}<span>${esc(g.name)}${g.worst === 'd-day' ? '<span class="tag">같은 날</span>' : ''}</span><span class="n">${g.items.length}회</span><span class="where">${where}</span>`;
+    b.onclick = () => {
+      g.items.forEach((it, i) => { const el = $('c' + it.k); if (!el) return;
+        el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+        if (i === 0) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+    };
+    li.appendChild(b); ul.appendChild(li);
+  });
+}
+
+// ---------- 이벤트 ----------
+const pagesEl = $('pages');
+pagesEl.addEventListener('input', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  const v = e.target.value;
+  if (v.trim()) state.cells[k] = v; else delete state.cells[k];
+  if (undoState) { undoState = null; $('bulkUndo').hidden = true; }   // 직접 고친 뒤엔 되돌리기가 그 내용까지 지우지 않게
+  if (state.sample) { state.sample = false; const n = pagesEl.querySelector('.notice'); if (n) n.remove(); }
+  markDuplicates(); save();
+});
+pagesEl.addEventListener('keydown', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  const [w, d, m, i] = k.split('-').map(Number);
+  let next = null;
+  const L = LINES();
+  if (e.key === 'Enter' || e.key === 'ArrowDown') next = i < L-1 ? [w,d,m,i+1] : m < 2 ? [w,d,m+1,0] : null;
+  if (e.key === 'ArrowUp') next = i > 0 ? [w,d,m,i-1] : m > 0 ? [w,d,m-1,L-1] : null;
+  if (next) { e.preventDefault(); const el = $('c' + next.join('-')); if (el) el.focus(); }
+});
+pagesEl.addEventListener('click', e => {
+  const btn = e.target.closest('.date'); if (!btn) return;
+  const w = +btn.dataset.w, d = +btn.dataset.d, key = `${w}-${d}`;
+  const inp = document.createElement('input'); inp.type = 'date'; inp.className = 'date-edit';
+  inp.value = iso(dateOf(w, d)); inp.setAttribute('aria-label', `${w+1}주 ${DAYS[d]}요일 날짜`);
+  let done = false;
+  const finish = commit => {
+    if (done) return; done = true;
+    if (commit && inp.value) {
+      if (inp.value === iso(autoDate(w, d))) delete state.overrides[key]; else state.overrides[key] = inp.value;
+      save();
+    }
+    render();
+  };
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') finish(true); if (ev.key === 'Escape') finish(false); });
+  inp.addEventListener('blur', () => finish(true));
+  btn.replaceWith(inp); inp.focus();
+});
+
+$('start').addEventListener('change', e => { if (!e.target.value) return; state.start = e.target.value; state.overrides = {}; save(); render(); });
+$('weeks').addEventListener('change', e => { state.weeks = e.target.value; save(); render(); });
+$('title').addEventListener('input', e => { state.title = e.target.value;
+  document.querySelectorAll('.ptitle b').forEach(b => b.textContent = state.title || autoTitle()); save(); });
+$('dupMode').addEventListener('click', e => {
+  const m = e.target.dataset && e.target.dataset.m; if (!m) return;
+  state.dupMode = m; save(); markDuplicates();
+});
+$('titleAlign').addEventListener('click', e => {
+  const a = e.target.dataset && e.target.dataset.a; if (!a) return;
+  state.titleAlign = a; save();
+  document.querySelectorAll('#titleAlign button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === a));
+  document.querySelectorAll('.ptitle').forEach(t => t.className = 'ptitle ' + a);
+});
+
+// ---------- 음식 일괄 넣기 / 빼기 ----------
+$('bulkDays').innerHTML = DAYS.map((d, i) => `<label><input type="checkbox" id="bulkDay${i}" value="${i}" checked>${d}</label>`).join('');
+let undoState = null;   // 일괄 작업·엑셀 불러오기 직전 상태 (되돌리기용)
+const snapshot = () => JSON.parse(JSON.stringify(state));
+function bulk(mode) {
+  const name = $('bulkName').value.trim(), msg = $('bulkMsg');
+  if (!name) { msg.textContent = '넣을 음식 이름을 먼저 입력하세요.'; $('bulkName').focus(); return; }
+  const meals = $('bulkMeal').value === 'all' ? [0,1,2] : [Number($('bulkMeal').value)];
+  const days = DAYS.map((_, i) => i).filter(i => $('bulkDay' + i).checked);
+  if (!days.length) { msg.textContent = '요일을 하나 이상 고르세요.'; return; }
+  const pos = $('bulkPos').value, L = LINES(), W = weekCount(), month = startDate().getUTCMonth();
+  const target = norm(name), before = snapshot();
+  let done = 0, exists = 0, full = 0;
+  for (let w = 0; w < W; w++) for (const d of days) {
+    if ($('bulkMonth').checked && dateOf(w, d).getUTCMonth() !== month) continue;
+    for (const m of meals) {
+      const key = i => `${w}-${d}-${m}-${i}`;
+      let arr = Array.from({ length: L }, (_, i) => state.cells[key(i)] || '');
+      if (mode === 'remove') {
+        const kept = arr.filter(v => norm(v) !== target);
+        if (kept.length === arr.length) continue;
+        done += arr.length - kept.length;
+        arr = kept.concat(Array(L - kept.length).fill(''));   // 빈 줄 없이 위로 당김
+      } else {
+        if (arr.some(v => norm(v) === target)) { exists++; continue; }
+        const gap = arr.indexOf('');
+        if (gap < 0) { full++; continue; }
+        if (pos === 'empty') arr[gap] = name;
+        else if (pos === 'top') { arr.splice(gap, 1); arr.unshift(name); }   // 빈 줄 하나를 없애며 위로 끼움
+        else if (!arr[L-1]) arr[L-1] = name;
+        else { full++; continue; }
+        done++;
+      }
+      arr.forEach((v, i) => { if (v) state.cells[key(i)] = v; else delete state.cells[key(i)]; });
+    }
+  }
+  if (!done) { msg.textContent = mode === 'remove' ? `"${name}"이(가) 들어간 칸이 없어요.` : `넣을 수 있는 칸이 없어요` + (exists ? ` (이미 있음 ${exists})` : '') + (full ? ` (줄이 꽉 참 ${full})` : '') + '.'; return; }
+  undoState = before; $('bulkUndo').hidden = false;
+  state.sample = false; save(); render();
+  msg.textContent = mode === 'remove' ? `"${name}" ${done}개를 뺐어요.`
+    : `"${name}"을(를) ${done}칸에 넣었어요.` + (exists ? ` 이미 있던 ${exists}칸은 건너뜀.` : '') + (full ? ` 줄이 꽉 찬 ${full}칸은 건너뜀.` : '');
+}
+$('bulkAdd').addEventListener('click', () => bulk('add'));
+$('bulkRemove').addEventListener('click', () => bulk('remove'));
+$('bulkName').addEventListener('keydown', e => { if (e.key === 'Enter') bulk('add'); });
+$('bulkUndo').addEventListener('click', () => {
+  if (!undoState) return;
+  state = undoState; undoState = null; $('bulkUndo').hidden = true;
+  save(); render(); $('bulkMsg').textContent = '방금 한 작업을 되돌렸어요.';
+});
+
+$('perPage').addEventListener('change', e => { const v = e.target.value; state.perPage = v === 'all' ? 'all' : Number(v); save(); render(); });
+$('lines').addEventListener('change', e => { state.lines = Number(e.target.value); save(); render(); });
+$('printColors').addEventListener('change', e => { state.printColors = e.target.checked; document.body.classList.toggle('plain', !state.printColors); save(); });
+$('exclude').addEventListener('input', e => { state.exclude = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); markDuplicates(); save(); });
+$('resetDates').addEventListener('click', () => { state.overrides = {}; save(); render(); });
+$('printBtn').addEventListener('click', () => window.print());
+
+let clearArmed = null;
+$('clearBtn').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (!clearArmed) { b.textContent = '한 번 더 누르면 비워집니다'; clearArmed = setTimeout(() => { b.textContent = '메뉴 비우기'; clearArmed = null; }, 3000); return; }
+  clearTimeout(clearArmed); clearArmed = null; b.textContent = '메뉴 비우기';
+  state.cells = {}; state.sample = false; save(); render();
+});
+
+$('exportBtn').addEventListener('click', () =>
+  saveBlob(new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }), `식단표_${state.start.slice(0,7)}.json`));
+$('importBtn').addEventListener('click', () => $('importFile').click());
+$('importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  e.target.value = '';
+  if (/\.xlsx?$/i.test(f.name)) {
+    $('savedAt').textContent = '엑셀 읽는 중…';
+    try { importXlsx(await f.arrayBuffer(), f.name); }
+    catch (err) { $('savedAt').textContent = '엑셀 불러오기 실패: ' + (err && err.message || err); }
+    return;
+  }
+  try { const s = JSON.parse(await f.text()); if (!s.start || !s.cells) throw 0; state = Object.assign(defaults(), s, { sample: false }); save(); render(); $('savedAt').textContent = `"${f.name}" 불러옴`; }
+  catch (err) { $('savedAt').textContent = '불러오기 실패: 이 편집기에서 저장한 .json 파일인지 확인하세요'; }
+});
+
+// ---------- 엑셀(식단표양식) 불러오기 ----------
+// 서식: 요일 줄(B~G에 월~토) → 날짜 줄 → A열에 조식/중식/석식이 적힌 칸부터 음식이 한 줄씩
+const libs = {};
+function loadLib(url, name) {   // 필요할 때만 cdnjs에서 받아옴
+  if (window[name]) return Promise.resolve(window[name]);
+  return libs[name] = libs[name] || new Promise((ok, fail) => {
+    const s = document.createElement('script'); s.src = url;
+    s.onload = () => ok(window[name]);
+    s.onerror = () => { delete libs[name]; fail(new Error('엑셀 도구를 받지 못했어요. 인터넷 연결을 확인하세요.')); };
+    document.head.appendChild(s);
+  });
+}
+const loadXlsxLib = () => loadLib('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX');
+function saveBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// 업로드 서식: 식단표양식 기반 6주 자동 날짜 엑셀(build.js가 만든 것)에 지금 시작일·제외 음식을 넣어서 내려줌
+async function downloadTemplate() {
+  const msg = $('xlMsg'); msg.textContent = '서식 만드는 중…';
+  try {
+    const JSZip = await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'JSZip');
+    const zip = await JSZip.loadAsync(Uint8Array.from(atob($('tplData').textContent.trim()), c => c.charCodeAt(0)));
+    const p = 'xl/worksheets/sheet2.xml';
+    let x = await zip.file(p).async('string');
+    const serial = Math.round((startDate() - Date.UTC(1899, 11, 30)) / 86400000);
+    x = x.replace(/(<c r="C3"[^>]*><v>)[^<]*(<\/v>)/, `$1${serial}$2`)
+      .replace(/<row r="(\d+)" ht="22" customHeight="1">[\s\S]*?<\/row>/g, (m, r) => {
+        const v = state.exclude[r - 10];
+        return `<row r="${r}" ht="22" customHeight="1">` + (v ? `<c r="B${r}" s="37" t="inlineStr"><is><t>${esc(v)}</t></is></c>` : `<c r="B${r}" s="37"/>`) + '</row>';
+      });
+    zip.file(p, x);
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const name = `식단표_업로드서식_${state.start.slice(0, 7)}.xlsx`;
+    saveBlob(blob, name);
+    msg.textContent = `"${name}"을(를) 받았어요. 식단을 적고 저장한 뒤 ② 엑셀 업로드를 누르세요.`;
+  } catch (err) { msg.textContent = '서식을 만들지 못했어요: ' + (err && err.message || err); }
+}
+$('xlTemplate').addEventListener('click', downloadTemplate);
+$('xlUpload').addEventListener('click', () => $('importFile').click());
+
+async function importXlsx(buf, fname) {
+  const XLSX = await loadXlsxLib();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets['식단표'] || wb.Sheets[wb.SheetNames[0]];
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:G1');
+  const cell = (r, c) => ws[XLSX.utils.encode_cell({ r, c })];
+  const text = (r, c) => { const x = cell(r, c); return x && x.v != null ? String(x.w != null && x.t !== 'n' ? x.w : x.v).trim() : ''; };
+  const year = startDate().getUTCFullYear();
+  const toDate = (r, c) => {           // 엑셀 날짜(숫자) 또는 "10월 5일", "10/5" 같은 글자
+    const x = cell(r, c); if (!x || x.v == null || x.v === '') return null;
+    if (x.t === 'n' && x.v > 20000 && x.v < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.round(x.v) * 86400000);
+    if (x.v instanceof Date) return new Date(Date.UTC(x.v.getFullYear(), x.v.getMonth(), x.v.getDate()));
+    const m = String(x.w || x.v).match(/(?:(\d{4})\s*[년.\/-]\s*)?(\d{1,2})\s*[월.\/-]\s*(\d{1,2})/);
+    return m ? new Date(Date.UTC(m[1] ? +m[1] : year, +m[2] - 1, +m[3])) : null;
+  };
+  const isDayRow = r => DAYS.every((d, i) => text(r, i + 1).startsWith(d));
+  const heads = [];
+  for (let r = range.s.r; r <= range.e.r; r++) if (isDayRow(r)) heads.push(r);
+  if (!heads.length) throw new Error('요일 줄(월~토)을 찾지 못했어요. 식단표양식 서식인지 확인하세요.');
+
+  const cells = {}, dates = [];
+  let maxLines = 0, filled = 0, usedWeeks = 0;
+  heads.slice(0, 6).forEach((hr, w) => {
+    dates.push(DAYS.map((_, d) => toDate(hr + 1, d + 1)));
+    const end = (heads[w + 1] != null ? heads[w + 1] : range.e.r + 1);
+    let meal = -1; const count = [0, 0, 0];
+    for (let r = hr + 2; r < end; r++) {
+      const a = text(r, 0).replace(/\s/g, '');
+      const mi = MEALS.findIndex(m => a.includes(m));
+      if (mi >= 0) meal = mi;
+      if (meal < 0) continue;
+      const i = count[meal]++;
+      maxLines = Math.max(maxLines, count[meal]);
+      DAYS.forEach((_, d) => { const v = text(r, d + 1); if (v) { cells[`${w}-${d}-${meal}-${i}`] = v; filled++; usedWeeks = Math.max(usedWeeks, w + 1); } });
+    }
+  });
+
+  undoState = snapshot(); $('bulkUndo').hidden = false;
+  state.cells = cells; state.sample = false;
+  state.lines = Math.min(8, Math.max(4, maxLines || 7));
+  // 날짜가 적혀 있으면 그 날짜로 맞추고, 순서에서 벗어난 날짜는 '수정된 날짜'로
+  const flat = dates.flat().filter(Boolean), first = flat[0];
+  state.overrides = {};
+  if (first) {
+    // 날짜가 가장 많이 속한 달을 이 식단표의 달로 보고, 그 달의 첫 날짜를 시작일로
+    const ym = d => d.getUTCFullYear() * 12 + d.getUTCMonth(), cnt = {};
+    flat.forEach(d => cnt[ym(d)] = (cnt[ym(d)] || 0) + 1);
+    const best = Number(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]);
+    state.start = iso(flat.find(d => ym(d) === best));
+    dates.forEach((row, w) => row.forEach((dt, d) => { if (dt && iso(dt) !== iso(autoDate(w, d))) state.overrides[`${w}-${d}`] = iso(dt); }));
+  }
+  // 서식의 빈 주(6주차 등)는 무시하고, 음식이 적힌 주가 자동 주 수보다 많을 때만 늘림
+  state.weeks = usedWeeks > autoWeeks() ? Math.min(6, usedWeeks) : 'auto';
+  const t = text(0, 0); state.title = t && t !== '식단표' && t !== autoTitle() ? t : state.title;
+  save(); render();
+  const msg = `"${fname}"에서 음식 ${filled}칸을 불러왔어요` + (first ? '' : ' (날짜가 비어 있어 현재 시작일 유지)');
+  $('savedAt').textContent = msg; $('xlMsg').textContent = msg + '. 잘못 올렸으면 음식 일괄 넣기의 되돌리기로 취소하세요.';
+}
+window.__importXlsx = importXlsx;   // 테스트용
+
+render();
+})();
+</script>
+</body></html>
