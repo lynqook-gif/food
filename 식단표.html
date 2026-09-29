@@ -120,8 +120,40 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
 .days{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
-.days label{display:flex;align-items:center;justify-content:center;gap:2px;font-size:12.5px;border:1px solid var(--line);border-radius:5px;padding:2px 0;cursor:pointer}
-.days input{accent-color:var(--accent);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:3px}
+.chips label{padding:2px 8px;white-space:nowrap}
+.days label,.chips label{display:flex;align-items:center;justify-content:center;gap:2px;font-size:12.5px;border:1px solid var(--line);border-radius:5px;padding:2px 0;cursor:pointer}
+.days input,.chips input{accent-color:var(--accent);margin:0}
+.mealed{display:flex;flex-direction:column;gap:4px}
+.mealed div{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:3px}
+.mealed input{border:1px solid var(--line);border-radius:6px;padding:4px 8px;min-width:0;background:var(--panel)}
+.mealed button{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:0 8px;cursor:pointer}
+.mealed button:hover{border-color:var(--accent)}
+.mealed button:disabled{opacity:.35;cursor:default}
+
+/* ---------- 시트 탭 ---------- */
+.main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.tabs{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px;border-bottom:1px solid var(--line);padding:0 2px}
+.tab{display:flex;align-items:center;border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;background:#E9ECEA;margin-bottom:-1px}
+.tab.on{background:var(--panel);font-weight:600}
+.tab .nm{border:0;background:none;padding:6px 12px;cursor:pointer;max-width:16em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .ic{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 6px;margin-right:2px;border-radius:4px;font-size:12px}
+.tab .ic:hover{background:var(--accent-soft);color:var(--ink)}
+.tab .ic.del:hover,.tab .ic.del.armed{background:#F6DEDB;color:#C2473B}
+.tab input{border:1px solid var(--accent);border-radius:4px;padding:3px 6px;width:11em;margin:3px 4px}
+.tabs .add{border:1px dashed var(--line);border-bottom:0;background:none;border-radius:6px 6px 0 0;padding:6px 10px;cursor:pointer;color:var(--accent);margin-bottom:-1px}
+.tabs .add:hover{border-color:var(--accent)}
+
+/* ---------- 찾기 · 칸 여러 개 고르기 ---------- */
+.find{position:fixed;right:16px;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--paper-shadow);padding:6px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:calc(100vw - 32px)}
+.find input{border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:13em;min-width:0}
+.find .cnt{font-size:12px;color:var(--muted);min-width:3.5em;text-align:center;font-variant-numeric:tabular-nums}
+.find .where{font-size:12px;color:var(--muted);flex-basis:100%;min-height:1em}
+.find button{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:2px 8px;cursor:pointer}
+.lines input.hit{background:#FFE58A!important}
+.lines input.hit.cur{background:#FFB938!important;box-shadow:inset 0 0 0 .4mm #B36B00!important}
+.lines input.sel{background:#CFE0F5!important}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;background:#1B1F1D;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;box-shadow:var(--paper-shadow);max-width:calc(100vw - 32px)}
 .row{display:flex;gap:6px;flex-wrap:wrap}
 .row .btn{flex:1}
 .msg{margin:0;font-size:12.5px;color:var(--accent);min-height:1em}
@@ -132,7 +164,9 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 /* ---------- 인쇄 (용지 방향은 JS가 #pageSize에 넣음) ---------- */
 @media print{
   body{background:#fff}
-  .bar,.side,.notice{display:none!important}
+  .bar,.side,.notice,.tabs,.find,.toast{display:none!important}
+  .main{display:block}
+  .lines input.hit,.lines input.sel{background:transparent!important;box-shadow:none!important}
   .wrap{display:block;padding:0}
   .pages{gap:0}
   .scroller{overflow:visible;padding:0;zoom:1!important}
@@ -150,9 +184,10 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
   <h1>교행e의 식단표 편집기<small id="savedAt">자동 저장됨</small></h1>
   <div class="actions">
     <button class="btn primary" id="printBtn" title="인쇄 창에서 대상을 'PDF로 저장'으로 고르면 PDF 파일이 됩니다">PDF 저장 · 인쇄</button>
-    <button class="btn" id="exportBtn">파일로 저장</button>
-    <button class="btn" id="importBtn" title="식단표양식 엑셀(.xlsx) 또는 '파일로 저장'한 .json">엑셀·파일 불러오기</button>
-    <input type="file" id="importFile" accept=".xlsx,.xls,.json,application/json" hidden>
+    <button class="btn" id="findBtn" title="표에서 음식 찾기 (Ctrl+F)">메뉴 찾기</button>
+    <button class="btn" id="exportBtn" title="모든 시트를 .json 파일 하나로 저장">파일로 저장</button>
+    <button class="btn" id="importBtn" title="엑셀(.xlsx·.xls·.csv) 또는 '파일로 저장'한 .json">엑셀·파일 불러오기</button>
+    <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json,application/json" hidden>
     <button class="btn danger" id="clearBtn">메뉴 비우기</button>
   </div>
 </header>
@@ -167,6 +202,8 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
         <li><b>중복 표시</b>에서 겹치는 음식을 확인하고 고치세요.</li>
         <li>위쪽 <b>PDF 저장·인쇄</b>로 출력하세요.</li>
       </ol>
+      <p class="hint"><b>Ctrl+F</b>: 음식 찾기 · 칸을 <b>끌어서</b>(또는 Shift+클릭) 여러 칸을 고른 뒤 <b>Delete</b>로 지우기, <b>Ctrl+C / Ctrl+V</b>로 복사·붙여넣기(엑셀 표도 그대로 붙여져요) · <b>Ctrl+Z</b>: 방금 한 작업 되돌리기</p>
+      <p class="hint">표 위의 <b>시트 탭</b>에서 <b>+ 새 시트</b>로 다른 식단표를 만들고, 탭을 두 번 누르거나 ✎로 이름을 바꿔요.</p>
       <p class="hint">입력한 내용은 이 브라우저에 자동 저장돼요. 다른 PC에서 이어 하려면 <b>파일로 저장</b>한 뒤 그 파일을 불러오세요.</p>
     </details>
     <section class="box">
@@ -174,6 +211,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <p class="hint">고른 날짜가 있는 주의 월요일부터 채워져요. 표의 날짜를 누르면 하루씩 고칠 수 있어요.</p>
       <div class="field"><label for="start">시작일</label><input type="date" id="start"></div>
       <div class="field"><label for="weeks">주 수</label><select id="weeks"></select></div>
+      <div class="field"><label>보기</label><div class="chips" id="mealView" role="group" aria-label="표에 보일 끼니"></div></div>
       <div class="field"><label for="title">제목</label><input type="text" id="title"></div>
       <div class="field"><label>제목 정렬</label>
         <div class="seg" id="titleAlign" role="group" aria-label="제목 정렬">
@@ -182,8 +220,15 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <button class="btn sm" id="resetDates" hidden>날짜 수정 모두 되돌리기</button>
     </section>
     <section class="box">
+      <h2>칸 구성</h2>
+      <p class="hint">칸 이름을 고치거나 간식 같은 새 칸을 추가해요. 위 <b>보기</b>에서 체크한 칸만 표에 나오고 인쇄돼요.</p>
+      <div class="mealed" id="mealEdit"></div>
+      <button class="btn sm" id="mealAdd" type="button">+ 칸 추가</button>
+    </section>
+    <section class="box">
       <h2>엑셀로 입력</h2>
       <p class="hint">서식을 받아 식단을 적고 저장한 뒤 올리면 표에 그대로 들어가요. 서식에는 지금 시작일과 제외 음식이 들어 있어요.</p>
+      <p class="hint">직접 만든 엑셀도 올릴 수 있어요. 월~토(또는 월~금)가 가로로 적힌 줄을 찾아 그 아래 음식을 채우고, 왼쪽 칸의 이름(조식·점심·간식 등)으로 칸을 나눠요. 한 칸에 여러 줄로 적은 메뉴도 줄마다 나눠 넣어요.</p>
       <button class="btn" id="xlTemplate" type="button">① 엑셀 서식 받기</button>
       <button class="btn primary" id="xlUpload" type="button">② 엑셀 업로드</button>
       <p class="msg" id="xlMsg" aria-live="polite"></p>
@@ -194,7 +239,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <div class="field"><label for="perPage">한 장에</label>
         <select id="perPage"><option value="all">한 달 전체 (A4 세로)</option><option value="2">2주씩 (A4 가로)</option><option value="1">1주씩 (A4 가로)</option></select></div>
       <div class="field"><label for="lines">끼니당 줄</label>
-        <select id="lines"><option value="4">4줄</option><option value="5">5줄</option><option value="6">6줄</option><option value="7">7줄</option><option value="8">8줄</option></select></div>
+        <select id="lines"><option value="3">3줄</option><option value="4">4줄</option><option value="5">5줄</option><option value="6">6줄</option><option value="7">7줄</option><option value="8">8줄</option><option value="9">9줄</option><option value="10">10줄</option><option value="11">11줄</option><option value="12">12줄</option></select></div>
       <p class="hint" id="fitHint"></p>
       <label class="check"><input type="checkbox" id="printColors"> 중복 색상도 인쇄하기</label>
     </section>
@@ -203,7 +248,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <p class="hint">쌀밥·우유처럼 자주 나오는 음식을 고른 요일에 한 번에 넣거나 빼요.</p>
       <div class="field"><label for="bulkName">음식</label><input type="text" id="bulkName" placeholder="예: 쌀밥"></div>
       <div class="field"><label for="bulkMeal">끼니</label>
-        <select id="bulkMeal"><option value="all">조식·중식·석식 전체</option><option value="0">조식만</option><option value="1">중식만</option><option value="2">석식만</option></select></div>
+        <select id="bulkMeal"></select></div>
       <div class="field"><label for="bulkPos">넣을 자리</label>
         <select id="bulkPos"><option value="top">맨 위 (기존 메뉴는 아래로)</option><option value="empty">첫 번째 빈 줄</option><option value="bottom">맨 아래 줄</option></select></div>
       <div class="days" id="bulkDays" role="group" aria-label="요일"></div>
@@ -249,16 +294,29 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
     </footer>
   </aside>
 
-  <main class="pages" id="pages"></main>
+  <main class="main">
+    <nav class="tabs" id="tabs" aria-label="시트"></nav>
+    <div class="pages" id="pages"></div>
+  </main>
 </div>
+
+<div class="find" id="find" role="search" hidden>
+  <input type="search" id="findQ" placeholder="찾을 음식" aria-label="찾을 음식">
+  <span class="cnt" id="findCnt"></span>
+  <button type="button" id="findPrev" title="이전 (Shift+Enter)" aria-label="이전">▲</button>
+  <button type="button" id="findNext" title="다음 (Enter)" aria-label="다음">▼</button>
+  <button type="button" id="findClose" title="닫기 (Esc) · 찾은 칸에서 바로 고칠 수 있어요" aria-label="닫기">✕</button>
+  <span class="where" id="findWhere"></span>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <!-- 엑셀 업로드 서식 (build.js가 식단표_자동.xlsx를 base64로 넣음) -->
 <script id="tplData" type="application/octet-stream">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</script>
 <script>
 (() => {
 const DAYS = ['월','화','수','목','금','토'];
-const MEALS = ['조식','중식','석식'];
-const KEY = 'sikdan.v1';
+const DEFAULT_MEALS = ['조식','중식','석식'];
+const KEY = 'sikdan.v1', BOOK_KEY = 'sikdan.book';   // v1: 시트 하나짜리 옛 저장분, book: 시트 여러 개
 const $ = id => document.getElementById(id);
 
 // ---------- 날짜 도우미 (UTC 기준) ----------
@@ -292,18 +350,37 @@ const firstNext = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1
 const defaults = () => ({
   start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', dupOn: true, lines: 7, printColors: false,
   overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], holidays: [], sample: true, v: 2,
+  meals: DEFAULT_MEALS.map(name => ({ name, show: true })), name: '',
 });
+// 저장분·불러온 파일을 지금 버전 모양으로 맞춤
+function fix(s) {
+  const st = Object.assign(defaults(), s);
+  if (st.v !== 2) { st.perPage = 'all'; st.v = 2; }   // 이전 버전 저장분은 새 기본 인쇄(한 달 세로)로
+  if (!Array.isArray(st.meals) || !st.meals.length) st.meals = defaults().meals;
+  if (!st.meals.some(m => m.show !== false)) st.meals[0].show = true;
+  return st;
+}
 
-let state = defaults();
-try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.start) state = Object.assign(defaults(), s); } catch (e) {}
-if (state.v !== 2) { state.perPage = 'all'; state.v = 2; }   // 이전 버전 저장분은 새 기본 인쇄(한 달 세로)로
-const LINES = () => Number(state.lines) || 7;
+// 시트(엑셀 탭처럼 식단표 여러 개). state는 지금 보고 있는 시트
+let book = null;
+try { book = JSON.parse(localStorage.getItem(BOOK_KEY)); } catch (e) {}
+if (!book || !Array.isArray(book.sheets) || !book.sheets.length) {
+  let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  book = { active: 0, sheets: [s && s.start ? s : {}] };
+}
+book.sheets = book.sheets.map(fix);
+book.active = Math.min(Math.max(0, book.active | 0), book.sheets.length - 1);
+let state = book.sheets[book.active];
+const setState = s => { state = s; book.sheets[book.active] = s; };
+const LINES = () => Math.min(12, Number(state.lines) || 7);
+const mealName = m => (state.meals[m] || {}).name || '';
+const visMeals = () => state.meals.map((_, i) => i).filter(i => state.meals[i].show !== false);
 
 let saveTimer;
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); $('savedAt').textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}); }
+    try { localStorage.setItem(BOOK_KEY, JSON.stringify(book)); $('savedAt').textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}); }
     catch (e) { $('savedAt').textContent = '브라우저 저장 불가 · "파일로 저장"을 이용하세요'; }
   }, 300);
 }
@@ -318,7 +395,8 @@ function autoWeeks() {
 const weekCount = () => state.weeks === 'auto' ? autoWeeks() : Number(state.weeks);
 const autoDate = (w, d) => addDays(monday(), w*7 + d);
 const dateOf = (w, d) => state.overrides[`${w}-${d}`] ? parse(state.overrides[`${w}-${d}`]) : autoDate(w, d);
-const autoTitle = () => { const s = startDate(); return `${s.getUTCFullYear()}년 ${s.getUTCMonth()+1}월 식단표`; };
+const autoTitleOf = st => { const s = parse(st.start); return `${s.getUTCFullYear()}년 ${s.getUTCMonth()+1}월 식단표`; };
+const autoTitle = () => autoTitleOf(state);
 const norm = v => (v || '').replace(/[\s\d.,*()]+$/,'').replace(/\s+/g,'');
 
 // ---------- 공휴일 ----------
@@ -375,6 +453,7 @@ function render() {
   if (document.activeElement !== $('exclude')) $('exclude').value = state.exclude.join('\n');
   if (document.activeElement !== $('holidays')) $('holidays').value = (state.holidays || []).join('\n');
   $('resetDates').hidden = !Object.keys(state.overrides).length;
+  renderTabs(); renderMeals();
 
   const pages = $('pages'); pages.innerHTML = '';
   if (state.sample) {
@@ -397,8 +476,155 @@ function render() {
     ws.forEach(w => box.appendChild(weekTable(w, month)));
     sc.appendChild(page); pages.appendChild(sc);
   }
+  buildGrid();
   fit();
   markDuplicates();
+  if (findOpen) runFind(true);
+}
+
+// 화면 순서대로 늘어놓은 줄 목록 (여러 칸 고르기·붙여넣기·위아래 이동용). 열은 요일(0~5)
+let grid = [], gridIdx = new Map();
+function buildGrid() {
+  grid = []; gridIdx = new Map(); sel = null;
+  const vis = visMeals(), L = LINES();
+  for (let w = 0; w < weekCount(); w++) for (const m of vis) for (let i = 0; i < L; i++) {
+    gridIdx.set(`${w}-${m}-${i}`, grid.length); grid.push({ w, m, i });
+  }
+}
+const posOf = k => { const [w, d, m, i] = k.split('-').map(Number); return { r: gridIdx.get(`${w}-${m}-${i}`), c: d }; };
+const keyAt = (r, c) => { const g = grid[r]; return g && c >= 0 && c < DAYS.length ? `${g.w}-${c}-${g.m}-${g.i}` : null; };
+
+// ---------- 시트 탭 ----------
+const sheetLabel = s => s.name || s.title || autoTitleOf(s);
+function renderTabs() {
+  const tabs = $('tabs'); tabs.innerHTML = '';
+  book.sheets.forEach((s, i) => {
+    const on = i === book.active, t = document.createElement('div');
+    t.className = 'tab' + (on ? ' on' : '');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'nm';
+    b.textContent = sheetLabel(s); b.title = on ? '두 번 누르면 이름 바꾸기' : '이 시트로 가기';
+    if (on) b.setAttribute('aria-current', 'page');
+    b.onclick = () => { if (!on) switchSheet(i); };
+    b.ondblclick = () => { if (on) renameSheet(t); };
+    t.appendChild(b);
+    if (on) {
+      const r = document.createElement('button'); r.type = 'button'; r.className = 'ic'; r.textContent = '✎';
+      r.title = '시트 이름 바꾸기'; r.setAttribute('aria-label', '시트 이름 바꾸기'); r.onclick = () => renameSheet(t);
+      t.appendChild(r);
+      if (book.sheets.length > 1) {
+        const x = document.createElement('button'); x.type = 'button'; x.className = 'ic del'; x.textContent = '✕';
+        x.title = '시트 지우기'; x.setAttribute('aria-label', '시트 지우기');
+        let armed = null;
+        x.onclick = () => {
+          if (!armed) { x.textContent = '지울까요?'; x.classList.add('armed'); armed = setTimeout(() => { x.textContent = '✕'; x.classList.remove('armed'); armed = null; }, 3000); return; }
+          clearTimeout(armed);
+          const name = sheetLabel(state);
+          book.sheets.splice(book.active, 1);
+          book.active = Math.max(0, book.active - 1);
+          switchSheet(book.active); toast(`"${name}" 시트를 지웠어요.`);
+        };
+        t.appendChild(x);
+      }
+    }
+    tabs.appendChild(t);
+  });
+  const add = document.createElement('button'); add.type = 'button'; add.className = 'add'; add.textContent = '+ 새 시트';
+  add.title = '지금 시트의 기간·칸 구성으로 빈 식단표를 만들어요'; add.onclick = () => newSheet(false);
+  const dup = document.createElement('button'); dup.type = 'button'; dup.className = 'add'; dup.textContent = '복제';
+  dup.title = '지금 시트를 음식까지 그대로 복사해요'; dup.onclick = () => newSheet(true);
+  tabs.append(add, dup);
+}
+function switchSheet(i) {
+  book.active = i; state = book.sheets[i];
+  undoState = null; $('bulkUndo').hidden = true; dupFocus = null;
+  save(); render();
+}
+function newSheet(copy) {
+  const s = fix(JSON.parse(JSON.stringify(state)));
+  s.sample = false;
+  if (copy) s.name = sheetLabel(state) + ' 사본';
+  else {
+    s.cells = {}; s.title = ''; s.overrides = {};
+    let n = book.sheets.length + 1; while (book.sheets.some(x => x.name === `시트${n}`)) n++;
+    s.name = `시트${n}`;
+  }
+  book.sheets.splice(book.active + 1, 0, s);
+  switchSheet(book.active + 1);
+  renameSheet(document.querySelector('.tab.on'));
+}
+function renameSheet(tab) {
+  if (!tab || tab.querySelector('input')) return;
+  const inp = document.createElement('input'); inp.value = sheetLabel(state); inp.setAttribute('aria-label', '시트 이름');
+  let done = false;
+  const finish = ok => { if (done) return; done = true; if (ok) { state.name = inp.value.trim(); save(); } renderTabs(); };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
+  inp.addEventListener('blur', () => finish(true));
+  tab.innerHTML = ''; tab.appendChild(inp); inp.focus(); inp.select();
+}
+
+// ---------- 칸(끼니) 구성 ----------
+function renderMeals() {
+  $('mealView').innerHTML = state.meals.map((m, i) =>
+    `<label><input type="checkbox" data-mi="${i}"${m.show !== false ? ' checked' : ''}>${esc(m.name || '(이름 없음)')}</label>`).join('');
+  const bm = $('bulkMeal'), bv = bm.value;
+  bm.innerHTML = '<option value="all">보이는 칸 전체</option>' + state.meals.map((m, i) => `<option value="${i}">${esc(m.name)}만</option>`).join('');
+  bm.value = [...bm.options].some(o => o.value === bv) ? bv : 'all';
+  const ed = $('mealEdit');
+  if (ed.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;   // 이름 입력 중엔 다시 그리지 않음
+  const n = state.meals.length;
+  ed.innerHTML = state.meals.map((m, i) => `<div><input value="${esc(m.name)}" data-mi="${i}" aria-label="${i+1}번째 칸 이름">` +
+    `<button type="button" data-up="${i}" title="위로" aria-label="위로"${i ? '' : ' disabled'}>↑</button>` +
+    `<button type="button" data-down="${i}" title="아래로" aria-label="아래로"${i < n - 1 ? '' : ' disabled'}>↓</button>` +
+    `<button type="button" data-del="${i}" title="칸 지우기 (되돌리기 가능)" aria-label="칸 지우기"${n > 1 ? '' : ' disabled'}>✕</button></div>`).join('');
+}
+// order: 새 순서대로 늘어놓은 옛 칸 번호. 빠진 칸의 음식은 지워짐
+function reorderMeals(order) {
+  const to = new Map(order.map((old, nw) => [old, nw])), cells = {};
+  for (const [k, v] of Object.entries(state.cells)) {
+    const p = k.split('-'), nm = to.get(Number(p[2]));
+    if (nm == null) continue;
+    p[2] = nm; cells[p.join('-')] = v;
+  }
+  state.cells = cells; state.meals = order.map(o => state.meals[o]);
+  if (!state.meals.some(m => m.show !== false)) state.meals[0].show = true;
+  save(); render();
+}
+$('mealView').addEventListener('change', e => {
+  const i = Number(e.target.dataset.mi); if (Number.isNaN(i)) return;
+  if (!e.target.checked && visMeals().length === 1) { e.target.checked = true; toast('칸을 하나 이상 보여야 해요.'); return; }
+  state.meals[i].show = e.target.checked; save(); render();
+});
+$('mealEdit').addEventListener('input', e => {
+  const i = Number(e.target.dataset.mi); if (Number.isNaN(i)) return;
+  state.meals[i].name = e.target.value.trim();
+  document.querySelectorAll(`th.meal[data-m="${i}"]`).forEach(th => th.textContent = state.meals[i].name);
+  save();
+});
+$('mealEdit').addEventListener('change', e => { if (e.target.dataset.mi != null) render(); });
+$('mealEdit').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const order = state.meals.map((_, i) => i);
+  if (b.dataset.up) { const i = +b.dataset.up; [order[i-1], order[i]] = [order[i], order[i-1]]; reorderMeals(order); }
+  else if (b.dataset.down) { const i = +b.dataset.down; [order[i], order[i+1]] = [order[i+1], order[i]]; reorderMeals(order); }
+  else if (b.dataset.del) {
+    const i = +b.dataset.del, name = mealName(i) || '이름 없는';
+    undoState = snapshot(); $('bulkUndo').hidden = false;
+    reorderMeals(order.filter(o => o !== i));
+    toast(`"${name}" 칸을 지웠어요 · Ctrl+Z로 되돌리기`);
+  }
+});
+$('mealAdd').addEventListener('click', () => {
+  const names = state.meals.map(m => m.name);
+  let name = names.includes('간식') ? '새 칸' : '간식', n = 2;
+  while (names.includes(name)) name = `새 칸 ${n++}`;
+  state.meals.push({ name, show: true }); save(); render();
+  const inp = $('mealEdit').querySelector(`input[data-mi="${state.meals.length - 1}"]`); if (inp) { inp.focus(); inp.select(); }
+});
+
+let toastTimer;
+function toast(t) {
+  const el = $('toast'); el.textContent = t; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 3500);
 }
 
 // 주 수와 줄 수에 맞춰 한 줄 높이를 계산해 용지를 빈틈없이 채움
@@ -448,8 +674,9 @@ function weekTable(w, month) {
       `<button class="date${dt.getUTCMonth() !== month ? ' out' : ''}${ovr ? ' ovr' : ''}${hol ? ' hol' : ''}" data-w="${w}" data-d="${d}" aria-label="${md(dt)} ${day}요일${hol ? ' ' + esc(hol) : ''}" title="${hol ? esc(hol) + ' · ' : ''}${ovr ? '수정된 날짜 · ' : ''}눌러서 날짜 수정">${md(dt)}</button></div></th>`;
   });
   h += '</tr></thead><tbody>';
-  MEALS.forEach((meal, m) => {
-    h += `<tr><th class="meal">${meal}</th>`;
+  visMeals().forEach(m => {
+    const meal = esc(mealName(m));
+    h += `<tr><th class="meal" data-m="${m}">${meal}</th>`;
     DAYS.forEach((_, d) => {
       h += '<td><div class="lines">';
       for (let i = 0; i < LINES(); i++) {
@@ -470,11 +697,11 @@ let dupFocus = null;   // 목록에서 고른 음식 (그 음식만 색 표시, 
 const FOOD_COLORS = ['#FFC4C4','#BFE3FF','#D4F5B0','#FFE0A3','#E3CCFF','#B5F0DA','#FFCCEB','#FFF3A3','#C9D3FF','#F3D3B8','#C4EEF0','#E6F0B0'];
 const foodColor = i => i < FOOD_COLORS.length ? FOOD_COLORS[i] : `hsl(${Math.round((i * 137.508) % 360)} 80% 85%)`;
 function markDuplicates() {
-  const W = weekCount(), ex = new Set(state.exclude.map(norm).filter(Boolean));
+  const W = weekCount(), ex = new Set(state.exclude.map(norm).filter(Boolean)), vis = new Set(visMeals());
   const groups = new Map();
   for (const [k, v] of Object.entries(state.cells)) {
-    const [w, d, , i] = k.split('-').map(Number);
-    if (w >= W || i >= LINES()) continue;
+    const [w, d, m, i] = k.split('-').map(Number);
+    if (w >= W || i >= LINES() || !vis.has(m)) continue;
     const n = norm(v);
     if (!n || ex.has(n)) continue;
     if (!groups.has(n)) groups.set(n, []);
@@ -489,7 +716,8 @@ function markDuplicates() {
   document.querySelectorAll('#dupMode button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'food') === food));
 
   // 식단표에 먼저 나오는 음식부터 색을 줌 (새 중복이 뒤에 생겨도 앞 음식 색은 그대로)
-  const order = it => ((it.w * 6 + it.d) * 3 + it.m) * 10 + Number(it.k.split('-')[3]);
+  const M = state.meals.length;
+  const order = it => ((it.w * 6 + it.d) * M + it.m) * 20 + Number(it.k.split('-')[3]);
   const dups = [...groups.entries()].filter(([, items]) => items.length > 1)
     .map(([key, items]) => { items.sort((a, c) => order(a) - order(c)); items.key = key; return items; })
     .sort((a, c) => order(a[0]) - order(c[0]));
@@ -517,7 +745,7 @@ function markDuplicates() {
   ul.innerHTML = list.length ? '' : '<li class="hint">겹치는 음식이 없어요.</li>';
   list.forEach(g => {
     const li = document.createElement('li'), b = document.createElement('button');
-    const where = g.items.map(it => `${short(dateOf(it.w, it.d))} ${MEALS[it.m]}`).join(', ');
+    const where = g.items.map(it => `${short(dateOf(it.w, it.d))} ${esc(mealName(it.m))}`).join(', ');
     const sw = !on ? '<span class="sw" style="background:transparent"></span>'
       : food ? `<span class="sw${g.worst === 'd-day' ? ' same-day' : ''}" style="background:${g.color}"></span>` : `<span class="sw" style="background:${rangeColor[g.worst]}"></span>`;
     b.innerHTML = `${sw}<span>${esc(g.name)}${g.worst === 'd-day' ? '<span class="tag">같은 날</span>' : ''}</span><span class="n">${g.items.length}회</span><span class="where">${where}</span>`;
@@ -543,17 +771,212 @@ pagesEl.addEventListener('input', e => {
   const v = e.target.value;
   if (v.trim()) state.cells[k] = v; else delete state.cells[k];
   if (undoState) { undoState = null; $('bulkUndo').hidden = true; }   // 직접 고친 뒤엔 되돌리기가 그 내용까지 지우지 않게
-  if (state.sample) { state.sample = false; const n = pagesEl.querySelector('.notice'); if (n) n.remove(); }
+  touched(); clearSel();
   markDuplicates(); save();
+  if (findOpen) runFind(true);
 });
+function touched() { if (state.sample) { state.sample = false; const n = pagesEl.querySelector('.notice'); if (n) n.remove(); } }
 pagesEl.addEventListener('keydown', e => {
   const k = e.target.dataset.k; if (!k) return;
-  const [w, d, m, i] = k.split('-').map(Number);
+  const p = posOf(k), el = e.target;
+  // 여러 칸을 고른 상태
+  if (multi()) {
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); fillSel(() => ''); return; }
+    if (e.key === 'Escape') { clearSel(); return; }
+  }
+  // Shift+↑↓ (여러 칸 고른 뒤엔 Shift+←→도): 고르는 범위 늘리기
+  const arrows = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+  if (e.shiftKey && arrows[e.key] && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || multi())) {
+    e.preventDefault();
+    if (!sel) sel = { ar: p.r, ac: p.c, fr: p.r, fc: p.c };
+    sel.fr = Math.max(0, Math.min(grid.length - 1, sel.fr + arrows[e.key][0]));
+    sel.fc = Math.max(0, Math.min(DAYS.length - 1, sel.fc + arrows[e.key][1]));
+    paintSel(); return;
+  }
+  if (multi() && !e.ctrlKey && !e.metaKey && !['Shift','Control','Meta','Alt'].includes(e.key)) clearSel();   // 글자를 치면 지금 칸만 고침
   let next = null;
-  const L = LINES();
-  if (e.key === 'Enter' || e.key === 'ArrowDown') next = i < L-1 ? [w,d,m,i+1] : m < 2 ? [w,d,m+1,0] : null;
-  if (e.key === 'ArrowUp') next = i > 0 ? [w,d,m,i-1] : m > 0 ? [w,d,m-1,L-1] : null;
-  if (next) { e.preventDefault(); const el = $('c' + next.join('-')); if (el) el.focus(); }
+  if (e.key === 'Enter' || e.key === 'ArrowDown') next = keyAt(p.r + 1, p.c);
+  if (e.key === 'ArrowUp') next = keyAt(p.r - 1, p.c);
+  // 글자 맨 앞/끝에서 ←→ 누르면 옆 요일 칸으로
+  const caretOnly = el.selectionStart === el.selectionEnd;
+  if (e.key === 'ArrowLeft' && !e.shiftKey && caretOnly && el.selectionStart === 0) next = keyAt(p.r, p.c - 1);
+  if (e.key === 'ArrowRight' && !e.shiftKey && caretOnly && el.selectionEnd === el.value.length) next = keyAt(p.r, p.c + 1);
+  if (next) {
+    e.preventDefault(); const n = $('c' + next); if (!n) return;
+    n.focus();
+    if (e.key === 'ArrowLeft') n.setSelectionRange(n.value.length, n.value.length);
+    else if (e.key === 'ArrowRight') n.setSelectionRange(0, 0);
+  }
+});
+
+// ---------- 여러 칸 고르기 · 지우기 · 복사 · 붙여넣기 ----------
+// sel: 고정점(ar,ac)과 끝점(fr,fc). 두 칸 이상일 때만 파란색으로 보이고, 글자 커서는 고정점 칸에 둠
+let sel = null, dragging = false;
+const multi = () => !!sel && (sel.ar !== sel.fr || sel.ac !== sel.fc);
+const selRect = () => ({ r1: Math.min(sel.ar, sel.fr), r2: Math.max(sel.ar, sel.fr), c1: Math.min(sel.ac, sel.fc), c2: Math.max(sel.ac, sel.fc) });
+function paintSel() {
+  document.querySelectorAll('.lines input.sel').forEach(el => el.classList.remove('sel'));
+  if (!multi()) return;
+  const R = selRect();
+  for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) { const el = $('c' + keyAt(r, c)); if (el) el.classList.add('sel'); }
+  const a = $('c' + keyAt(sel.ar, sel.ac));
+  if (a && document.activeElement === a) a.setSelectionRange(a.value.length, a.value.length);   // 칸 안 글자 선택은 풀기
+}
+function clearSel() { if (sel) { sel = null; paintSel(); } }
+const cellAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.matches && el.matches('.lines input') ? el : null; };
+document.addEventListener('mousedown', e => {
+  const el = e.target.closest && e.target.closest('.lines input');
+  if (!el || e.button !== 0) { if (!(e.target.closest && e.target.closest('.find'))) clearSel(); return; }
+  const p = posOf(el.dataset.k), act = document.activeElement;
+  if (e.shiftKey && act && act.dataset && act.dataset.k) {   // Shift+클릭: 지금 칸부터 누른 칸까지
+    e.preventDefault();
+    const a = sel || (q => ({ ar: q.r, ac: q.c }))(posOf(act.dataset.k));
+    sel = { ar: a.ar, ac: a.ac, fr: p.r, fc: p.c }; paintSel(); return;
+  }
+  sel = { ar: p.r, ac: p.c, fr: p.r, fc: p.c }; dragging = true; paintSel();
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging || !sel) return;
+  if (!(e.buttons & 1)) { dragging = false; return; }
+  const el = cellAt(e.clientX, e.clientY); if (!el) return;
+  const p = posOf(el.dataset.k);
+  if (p.r === sel.fr && p.c === sel.fc) return;
+  sel.fr = p.r; sel.fc = p.c; paintSel();
+});
+document.addEventListener('mouseup', () => {
+  if (!dragging) return; dragging = false;
+  if (!multi()) return;
+  const a = $('c' + keyAt(sel.ar, sel.ac));
+  if (a) { a.focus(); a.setSelectionRange(a.value.length, a.value.length); }
+});
+function setCell(k, v) {
+  v = (v || '').trim();
+  if (v) state.cells[k] = v; else delete state.cells[k];
+  const el = $('c' + k); if (el) el.value = v;
+}
+function afterEdit(before, msg) {
+  undoState = before; $('bulkUndo').hidden = false;
+  touched(); markDuplicates(); paintSel(); save();
+  if (findOpen) runFind(true);
+  toast(msg + ' · Ctrl+Z로 되돌리기');
+}
+function fillSel(fn) {
+  const R = selRect(), before = snapshot(); let n = 0;
+  for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) { const k = keyAt(r, c); if (k) { setCell(k, fn()); n++; } }
+  afterEdit(before, fn() ? `${n}칸에 붙여 넣었어요` : `${n}칸을 지웠어요`);
+}
+const selText = () => {
+  const R = selRect(), rows = [];
+  for (let r = R.r1; r <= R.r2; r++) { const row = []; for (let c = R.c1; c <= R.c2; c++) row.push(state.cells[keyAt(r, c)] || ''); rows.push(row.join('\t')); }
+  return rows.join('\n');
+};
+// 엑셀에서 복사한 글(탭·줄바꿈, 칸 안 줄바꿈은 "…"로 감쌈)을 표 모양으로
+function parseTsv(t) {
+  t = t.replace(/\r\n?/g, '\n').replace(/\n$/, '');
+  const rows = [[]]; let cur = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"' && cur === '') q = true;
+    else if (ch === '\t') { rows[rows.length-1].push(cur); cur = ''; }
+    else if (ch === '\n') { rows[rows.length-1].push(cur); rows.push([]); cur = ''; }
+    else cur += ch;
+  }
+  rows[rows.length-1].push(cur);
+  return rows;
+}
+const inCell = () => { const a = document.activeElement; return a && a.dataset && a.dataset.k ? a : null; };
+document.addEventListener('copy', e => { if (!multi() || !inCell()) return; e.preventDefault(); e.clipboardData.setData('text/plain', selText()); toast('고른 칸을 복사했어요'); });
+document.addEventListener('cut', e => { if (!multi() || !inCell()) return; e.preventDefault(); e.clipboardData.setData('text/plain', selText()); fillSel(() => ''); });
+document.addEventListener('paste', e => {
+  const el = inCell(); if (!el) return;
+  const text = e.clipboardData.getData('text/plain'); if (!text) return;
+  const rows = parseTsv(text);
+  const one = rows.length === 1 && rows[0].length === 1 && !rows[0][0].includes('\n');
+  if (one && !multi()) {   // 한 칸짜리는 커서 자리에 끼워 넣기 (끝 줄바꿈만 떼고)
+    if (rows[0][0] === text) return;
+    e.preventDefault(); el.setRangeText(rows[0][0].trim(), el.selectionStart, el.selectionEnd, 'end');
+    el.dispatchEvent(new Event('input', { bubbles: true })); return;
+  }
+  e.preventDefault();
+  if (one) { const v = rows[0][0]; fillSel(() => v); return; }   // 한 값을 고른 칸 모두에
+  const R = sel ? selRect() : (p => ({ r1: p.r, c1: p.c }))(posOf(el.dataset.k)), before = snapshot();
+  // 칸 안에 여러 줄이면 아래 줄로 나눠 넣음
+  let r = R.r1, n = 0, maxC = R.c1;
+  for (const row of rows) {
+    const parts = row.map(v => v.split('\n').map(s => s.trim()));
+    const h = Math.max(1, ...parts.map(p => p.length));
+    parts.forEach((lines, j) => {
+      const c = R.c1 + j; if (c >= DAYS.length) return; maxC = Math.max(maxC, c);
+      for (let t = 0; t < h; t++) { const k = keyAt(r + t, c); if (k) { setCell(k, lines[t]); n++; } }
+    });
+    r += h;
+  }
+  sel = { ar: R.r1, ac: R.c1, fr: Math.min(grid.length - 1, r - 1), fc: maxC };
+  afterEdit(before, `${n}칸에 붙여 넣었어요` + (r > grid.length ? ' (표 밖으로 넘친 줄은 빠짐)' : ''));
+});
+
+// ---------- 메뉴 찾기 (Ctrl+F) ----------
+// 브라우저 찾기는 입력 칸 속 글자를 못 찾아서 직접 만듦
+let findOpen = false, hits = [], hitIdx = -1;
+function openFind() {
+  const f = $('find'); f.hidden = false; findOpen = true;
+  f.style.top = (document.querySelector('.bar').getBoundingClientRect().bottom + 8) + 'px';
+  const act = inCell(), q = $('findQ');
+  if (act && act.selectionStart !== act.selectionEnd) q.value = act.value.slice(act.selectionStart, act.selectionEnd);
+  q.focus(); q.select(); runFind(false);
+}
+function closeFind(edit) {
+  $('find').hidden = true; findOpen = false;
+  const cur = hits[hitIdx] && $('c' + hits[hitIdx]);
+  document.querySelectorAll('.lines input.hit').forEach(el => el.classList.remove('hit', 'cur'));
+  if (edit && cur) { cur.focus(); cur.setSelectionRange(cur.value.length, cur.value.length); }   // 찾은 칸에서 바로 고치기
+}
+function runFind(keep) {
+  document.querySelectorAll('.lines input.hit').forEach(el => el.classList.remove('hit', 'cur'));
+  const q = $('findQ').value.replace(/\s+/g, '').toLowerCase(), prev = hits[hitIdx];
+  hits = [];
+  if (q) {
+    const vis = new Set(visMeals()), W = weekCount(), L = LINES(), M = state.meals.length;
+    hits = Object.keys(state.cells).filter(k => {
+      const [w, , m, i] = k.split('-').map(Number);
+      return w < W && i < L && vis.has(m) && state.cells[k].replace(/\s+/g, '').toLowerCase().includes(q);
+    }).sort((a, b) => { const x = a.split('-').map(Number), y = b.split('-').map(Number); return (((x[0]*6+x[1])*M+x[2])*20+x[3]) - (((y[0]*6+y[1])*M+y[2])*20+y[3]); });
+  }
+  hits.forEach(k => { const el = $('c' + k); if (el) el.classList.add('hit'); });
+  hitIdx = keep && hits.includes(prev) ? hits.indexOf(prev) : hits.length ? 0 : -1;
+  showHit(!keep);
+}
+function showHit(scroll) {
+  document.querySelectorAll('.lines input.hit.cur').forEach(el => el.classList.remove('cur'));
+  const q = $('findQ').value.trim();
+  $('findCnt').textContent = !q ? '' : hits.length ? `${hitIdx + 1}/${hits.length}` : '없음';
+  const k = hits[hitIdx];
+  if (!k) { $('findWhere').textContent = q && !hits.length ? '표에 없는 음식이에요' : ''; return; }
+  const [w, d, m] = k.split('-').map(Number), el = $('c' + k);
+  $('findWhere').textContent = `${md(dateOf(w, d))}(${DAYS[d]}) ${mealName(m)} · ${state.cells[k]} · Esc로 닫고 이 칸 고치기`;
+  if (el) { el.classList.add('cur'); if (scroll) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+}
+const stepHit = n => { if (!hits.length) return; hitIdx = (hitIdx + n + hits.length) % hits.length; showHit(true); };
+$('findQ').addEventListener('input', () => runFind(false));
+$('findQ').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); stepHit(e.shiftKey ? -1 : 1); }
+  if (e.key === 'Escape') { e.preventDefault(); closeFind(true); }
+});
+$('findNext').addEventListener('click', () => stepHit(1));
+$('findPrev').addEventListener('click', () => stepHit(-1));
+$('findClose').addEventListener('click', () => closeFind(false));
+$('findBtn').addEventListener('click', openFind);
+document.addEventListener('keydown', e => {
+  const mod = (e.ctrlKey || e.metaKey) && !e.altKey;
+  if (mod && e.code === 'KeyF') { e.preventDefault(); openFind(); return; }   // 한글 입력 중에도 되게 code로 봄
+  if (e.key === 'F3' && findOpen) { e.preventDefault(); stepHit(e.shiftKey ? -1 : 1); return; }
+  if (e.key === 'Escape' && findOpen && !e.defaultPrevented) { closeFind(false); return; }
+  // Ctrl+Z: 여러 칸 지우기·붙여넣기·일괄 넣기 등을 되돌림 (칸에 직접 친 글자는 브라우저가 되돌림)
+  const a = document.activeElement;
+  if (mod && !e.shiftKey && e.code === 'KeyZ' && undoState && (!a || a === document.body || (a.dataset && a.dataset.k))) {
+    e.preventDefault(); $('bulkUndo').click();
+  }
 });
 pagesEl.addEventListener('click', e => {
   const btn = e.target.closest('.date'); if (!btn) return;
@@ -596,7 +1019,7 @@ const snapshot = () => JSON.parse(JSON.stringify(state));
 function bulk(mode) {
   const name = $('bulkName').value.trim(), msg = $('bulkMsg');
   if (!name) { msg.textContent = '넣을 음식 이름을 먼저 입력하세요.'; $('bulkName').focus(); return; }
-  const meals = $('bulkMeal').value === 'all' ? [0,1,2] : [Number($('bulkMeal').value)];
+  const meals = $('bulkMeal').value === 'all' ? visMeals() : [Number($('bulkMeal').value)];
   const days = DAYS.map((_, i) => i).filter(i => $('bulkDay' + i).checked);
   if (!days.length) { msg.textContent = '요일을 하나 이상 고르세요.'; return; }
   const pos = $('bulkPos').value, L = LINES(), W = weekCount(), month = startDate().getUTCMonth();
@@ -636,8 +1059,8 @@ $('bulkRemove').addEventListener('click', () => bulk('remove'));
 $('bulkName').addEventListener('keydown', e => { if (e.key === 'Enter') bulk('add'); });
 $('bulkUndo').addEventListener('click', () => {
   if (!undoState) return;
-  state = undoState; undoState = null; $('bulkUndo').hidden = true;
-  save(); render(); $('bulkMsg').textContent = '방금 한 작업을 되돌렸어요.';
+  setState(undoState); undoState = null; $('bulkUndo').hidden = true;
+  save(); render(); $('bulkMsg').textContent = '방금 한 작업을 되돌렸어요.'; toast('방금 한 작업을 되돌렸어요.');
 });
 
 $('perPage').addEventListener('change', e => { const v = e.target.value; state.perPage = v === 'all' ? 'all' : Number(v); save(); render(); });
@@ -659,18 +1082,30 @@ $('clearBtn').addEventListener('click', e => {
 });
 
 $('exportBtn').addEventListener('click', () =>
-  saveBlob(new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }), `식단표_${state.start.slice(0,7)}.json`));
+  saveBlob(new Blob([JSON.stringify({ book: 3, active: book.active, sheets: book.sheets }, null, 1)], { type: 'application/json' }), `식단표_${state.start.slice(0,7)}.json`));
 $('importBtn').addEventListener('click', () => $('importFile').click());
 $('importFile').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   e.target.value = '';
-  if (/\.xlsx?$/i.test(f.name)) {
+  if (/\.(xlsx|xls|csv)$/i.test(f.name)) {
     $('savedAt').textContent = '엑셀 읽는 중…';
-    try { importXlsx(await f.arrayBuffer(), f.name); }
-    catch (err) { $('savedAt').textContent = '엑셀 불러오기 실패: ' + (err && err.message || err); }
+    try { await importXlsx(await f.arrayBuffer(), f.name); }
+    catch (err) { const m = '엑셀 불러오기 실패: ' + (err && err.message || err); $('savedAt').textContent = m; $('xlMsg').textContent = m; }
     return;
   }
-  try { const s = JSON.parse(await f.text()); if (!s.start || !s.cells) throw 0; state = Object.assign(defaults(), s, { sample: false }); save(); render(); $('savedAt').textContent = `"${f.name}" 불러옴`; }
+  // .json은 새 시트로 추가 (지금 작업은 그대로). 예시만 있는 처음 상태면 바꿔 끼움
+  try {
+    const s = JSON.parse(await f.text());
+    const list = Array.isArray(s.sheets) ? s.sheets : s.start && s.cells ? [s] : null;
+    if (!list || !list.length) throw 0;
+    const add = list.map(x => fix(Object.assign({}, x, { sample: false })));
+    if (!s.sheets && !add[0].name) add[0].name = f.name.replace(/\.json$/i, '');
+    let at;
+    if (book.sheets.length === 1 && state.sample) { book.sheets = add; at = Math.min(s.active | 0, add.length - 1); }
+    else { book.sheets.splice(book.active + 1, 0, ...add); at = book.active + 1; }
+    switchSheet(at);
+    $('savedAt').textContent = `"${f.name}" 불러옴`; toast(`"${f.name}"에서 시트 ${add.length}개를 불러왔어요.`);
+  }
   catch (err) { $('savedAt').textContent = '불러오기 실패: 이 편집기에서 저장한 .json 파일인지 확인하세요'; }
 });
 
@@ -696,6 +1131,27 @@ function saveBlob(blob, name) {
 // 업로드 서식: 식단표양식 기반 6주 자동 날짜 엑셀(build.js가 만든 것)에 지금 시작일·제외 음식을 넣어서 내려줌
 async function downloadTemplate() {
   const msg = $('xlMsg'); msg.textContent = '서식 만드는 중…';
+  const custom = state.meals.map(m => m.name).join() !== DEFAULT_MEALS.join();
+  if (custom) {   // 칸 구성을 바꿨으면 지금 칸 그대로(음식도 채워서) 간단한 서식을 만듦
+    try {
+      const XLSX = await loadXlsxLib(), W = weekCount(), L = LINES(), aoa = [[state.title || autoTitle()]], merges = [];
+      for (let w = 0; w < W; w++) {
+        aoa.push(['', ...DAYS]);
+        aoa.push(['', ...DAYS.map((_, d) => iso(dateOf(w, d)))]);
+        state.meals.forEach((m, mi) => {
+          for (let i = 0; i < L; i++) aoa.push([i ? '' : m.name, ...DAYS.map((_, d) => state.cells[`${w}-${d}-${mi}-${i}`] || '')]);
+          if (L > 1) merges.push({ s: { r: aoa.length - L, c: 0 }, e: { r: aoa.length - 1, c: 0 } });
+        });
+      }
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = merges; ws['!cols'] = [{ wch: 8 }, ...DAYS.map(() => ({ wch: 18 }))];
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '식단표');
+      const name = `식단표_업로드서식_${state.start.slice(0, 7)}.xlsx`;
+      XLSX.writeFile(wb, name);
+      msg.textContent = `"${name}"을(를) 받았어요 (지금 칸 구성·음식 포함). 고친 뒤 ② 엑셀 업로드를 누르세요.`;
+    } catch (err) { msg.textContent = '서식을 만들지 못했어요: ' + (err && err.message || err); }
+    return;
+  }
   try {
     const JSZip = await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'JSZip');
     const zip = await JSZip.loadAsync(Uint8Array.from(atob($('tplData').textContent.trim()), c => c.charCodeAt(0)));
@@ -717,14 +1173,34 @@ async function downloadTemplate() {
 $('xlTemplate').addEventListener('click', downloadTemplate);
 $('xlUpload').addEventListener('click', () => $('importFile').click());
 
+// 식단표양식뿐 아니라 직접 만든 엑셀도 읽음:
+// - 요일 줄: 월~금(토) 칸이 가로로 이어진 줄 (어느 열에서 시작해도, '월요일'·'10/5(월)'도 됨)
+// - 날짜: 요일 줄 아래 줄 또는 요일 칸 안. 요일 줄이 맨 위에 한 번뿐이면 날짜 줄마다 한 주로 봄
+// - 칸 이름: 요일보다 왼쪽 열의 글자 (조식·아침·점심·간식 …). 모르는 이름이면 새 칸으로 추가
+// - 한 칸에 줄바꿈으로 여러 메뉴를 적었으면 줄마다 나눔
 async function importXlsx(buf, fname) {
   const XLSX = await loadXlsxLib();
   const wb = XLSX.read(buf, { type: 'array' });
-  const ws = wb.Sheets['식단표'] || wb.Sheets[wb.SheetNames[0]];
-  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:G1');
-  const cell = (r, c) => ws[XLSX.utils.encode_cell({ r, c })];
-  const text = (r, c) => { const x = cell(r, c); return x && x.v != null ? String(x.w != null && x.t !== 'n' ? x.w : x.v).trim() : ''; };
   const year = startDate().getUTCFullYear();
+  const DN = '월화수목금토일';
+  const dayIdx = t => {
+    t = t.replace(/\s/g, ''); if (!t) return -1;
+    const m = t.match(/^([월화수목금토일])(요일)?(?![가-힣])/) || t.match(/[(\[]([월화수목금토일])[)\]]/) || t.match(/([월화수목금토일])요일/);
+    return m ? DN.indexOf(m[1]) : -1;
+  };
+  let ws, range, cell, text, hr = -1, c0 = -1, nd = 0;
+  for (const sn of ['식단표', ...wb.SheetNames]) {   // '식단표' 시트 먼저, 없으면 요일 줄이 있는 첫 시트
+    ws = wb.Sheets[sn]; if (!ws || !ws['!ref']) continue;
+    range = XLSX.utils.decode_range(ws['!ref']);
+    cell = (r, c) => ws[XLSX.utils.encode_cell({ r, c })];
+    text = (r, c) => { const x = cell(r, c); return x && x.v != null ? String(x.w != null && x.t !== 'n' ? x.w : x.v).trim() : ''; };
+    for (let r = range.s.r; r <= range.e.r && hr < 0; r++) for (let c = range.s.c; c <= range.e.c - 4; c++) {
+      if ([0,1,2,3,4].every(i => dayIdx(text(r, c + i)) === i)) { hr = r; c0 = c; nd = dayIdx(text(r, c + 5)) === 5 ? 6 : 5; break; }
+    }
+    if (hr >= 0) break;
+  }
+  if (hr < 0) throw new Error('요일(월~금 또는 월~토)이 가로로 적힌 줄을 찾지 못했어요.');
+
   const toDate = (r, c) => {           // 엑셀 날짜(숫자) 또는 "10월 5일", "10/5" 같은 글자
     const x = cell(r, c); if (!x || x.v == null || x.v === '') return null;
     if (x.t === 'n' && x.v > 20000 && x.v < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.round(x.v) * 86400000);
@@ -732,31 +1208,73 @@ async function importXlsx(buf, fname) {
     const m = String(x.w || x.v).match(/(?:(\d{4})\s*[년.\/-]\s*)?(\d{1,2})\s*[월.\/-]\s*(\d{1,2})/);
     return m ? new Date(Date.UTC(m[1] ? +m[1] : year, +m[2] - 1, +m[3])) : null;
   };
-  const isDayRow = r => DAYS.every((d, i) => text(r, i + 1).startsWith(d));
-  const heads = [];
-  for (let r = range.s.r; r <= range.e.r; r++) if (isDayRow(r)) heads.push(r);
-  if (!heads.length) throw new Error('요일 줄(월~토)을 찾지 못했어요. 식단표양식 서식인지 확인하세요.');
+  // 날짜만 적힌 칸인지 (음식 칸의 알레르기 번호 '5.6'을 날짜로 잘못 보지 않게 다른 글자가 없어야 함)
+  const isDateCell = (r, c) => {
+    const x = cell(r, c); if (!x || x.v == null || x.v === '') return false;
+    if (x.t === 'n') return x.v > 20000 && x.v < 80000;
+    const s = String(x.w || x.v);
+    return /\d{1,2}\s*[월.\/-]\s*\d{1,2}/.test(s) && !s.replace(/[\d\s년월일요.\/\-()\[\]]|[화수목금토]/g, '');
+  };
+  const cols = Array.from({ length: nd }, (_, d) => c0 + d);
+  const isDayRow = r => cols.slice(0, 5).every((c, i) => dayIdx(text(r, c)) === i);
+  const isDateRow = r => cols.filter(c => isDateCell(r, c)).length >= 3;
+  const rowDates = r => DAYS.map((_, d) => d < nd ? toDate(r, c0 + d) : null);
 
-  const cells = {}, dates = [];
+  // 주 나누기
+  const weeks = []; let cur = null;
+  for (let r = hr; r <= range.e.r; r++) {
+    if (isDayRow(r)) {
+      if (r < range.e.r && isDateRow(r + 1)) continue;   // 바로 아래 날짜 줄에서 주 시작
+      cur = { dates: rowDates(r), rows: [] }; weeks.push(cur); continue;
+    }
+    if (isDateRow(r)) { cur = { dates: rowDates(r), rows: [] }; weeks.push(cur); continue; }
+    if (cur) cur.rows.push(r);
+  }
+
+  // 칸 이름 → 칸 번호 (지금 칸 이름 → 아침/점심/저녁 같은 말 → 새 칸)
+  const meals = state.meals.map(m => ({ name: m.name, show: m.show }));
+  const SYN = [['조식', /조식|아침|breakfast/i], ['중식', /중식|점심|lunch/i], ['석식', /석식|저녁|dinner/i]];
+  const known = lab => {
+    const a = lab.replace(/\s/g, ''); let best = -1, len = 0;
+    meals.forEach((m, i) => { const n = (m.name || '').replace(/\s/g, ''); if (n && a.includes(n) && n.length > len) { best = i; len = n.length; } });
+    if (best >= 0) return best;
+    for (const [name, re] of SYN) if (re.test(a)) { const i = meals.findIndex(m => m.name === name); return i >= 0 ? i : meals.push({ name, show: true }) - 1; }
+    return -1;
+  };
+  const labelMeal = r => {
+    const labs = [];
+    for (let c = range.s.c; c < c0; c++) { if (dayIdx(text(hr, c)) === 6) continue; const t = text(r, c); if (t) labs.push(t); }
+    for (const t of labs) { const i = known(t); if (i >= 0) return i; }
+    const t = labs.pop();
+    if (!t || t.length > 12 || /^[\d\s.]*$/.test(t) || /^\d+\s*주/.test(t) || meals.length >= 10) return -1;
+    return meals.push({ name: t, show: true }) - 1;
+  };
+  const fallback = () => { const i = meals.findIndex(m => m.name === '중식'); return i >= 0 ? i : 0; };
+
+  const cells = {}, dates = [], usedMeals = new Set();
   let maxLines = 0, filled = 0, usedWeeks = 0;
-  heads.slice(0, 6).forEach((hr, w) => {
-    dates.push(DAYS.map((_, d) => toDate(hr + 1, d + 1)));
-    const end = (heads[w + 1] != null ? heads[w + 1] : range.e.r + 1);
-    let meal = -1; const count = [0, 0, 0];
-    for (let r = hr + 2; r < end; r++) {
-      const a = text(r, 0).replace(/\s/g, '');
-      const mi = MEALS.findIndex(m => a.includes(m));
-      if (mi >= 0) meal = mi;
-      if (meal < 0) continue;
-      const i = count[meal]++;
-      maxLines = Math.max(maxLines, count[meal]);
-      DAYS.forEach((_, d) => { const v = text(r, d + 1); if (v) { cells[`${w}-${d}-${meal}-${i}`] = v; filled++; usedWeeks = Math.max(usedWeeks, w + 1); } });
+  weeks.slice(0, 6).forEach((wk, w) => {
+    dates.push(wk.dates);
+    let meal = -1; const base = {}, pend = {};
+    for (const r of wk.rows) {
+      const mi = labelMeal(r);
+      if (mi >= 0 && mi !== meal) { if (meal >= 0) { base[meal] = (base[meal] || 0) + (pend[meal] || 0); pend[meal] = 0; maxLines = Math.max(maxLines, base[meal]); } meal = mi; }
+      const parts = cols.map(c => text(r, c).split(/\r?\n/).map(s => s.trim()).filter(Boolean));
+      if (!parts.some(p => p.length)) { if (meal >= 0) pend[meal] = (pend[meal] || 0) + 1; continue; }   // 빈 줄은 뒤에 음식이 올 때만 셈
+      if (meal < 0) meal = fallback();
+      const b = (base[meal] || 0) + (pend[meal] || 0); pend[meal] = 0;
+      const h = Math.max(1, ...parts.map(p => p.length));
+      parts.forEach((p, d) => p.forEach((v, j) => { cells[`${w}-${d}-${meal}-${b + j}`] = v; filled++; }));
+      usedMeals.add(meal); usedWeeks = Math.max(usedWeeks, w + 1);
+      base[meal] = b + h; maxLines = Math.max(maxLines, base[meal]);
     }
   });
+  if (!filled) throw new Error('요일 줄은 찾았지만 그 아래에서 음식을 찾지 못했어요.');
 
   undoState = snapshot(); $('bulkUndo').hidden = false;
   state.cells = cells; state.sample = false;
-  state.lines = Math.min(8, Math.max(4, maxLines || 7));
+  state.meals = meals.map((m, i) => ({ name: m.name, show: usedMeals.has(i) }));   // 엑셀에 있는 칸만 보이게
+  state.lines = Math.min(12, Math.max(4, maxLines || 7));
   // 날짜가 적혀 있으면 그 날짜로 맞추고, 순서에서 벗어난 날짜는 '수정된 날짜'로
   const flat = dates.flat().filter(Boolean), first = flat[0];
   state.overrides = {};
@@ -770,10 +1288,14 @@ async function importXlsx(buf, fname) {
   }
   // 서식의 빈 주(6주차 등)는 무시하고, 음식이 적힌 주가 자동 주 수보다 많을 때만 늘림
   state.weeks = usedWeeks > autoWeeks() ? Math.min(6, usedWeeks) : 'auto';
-  const t = text(0, 0); state.title = t && t !== '식단표' && t !== autoTitle() ? t : state.title;
+  // 제목: 요일 줄 위쪽의 첫 글자
+  let t = '';
+  for (let r = range.s.r; r < hr && !t; r++) for (let c = range.s.c; c <= range.e.c && !t; c++) t = text(r, c);
+  state.title = t && t !== '식단표' && t !== autoTitle() ? t : state.title;
   save(); render();
-  const msg = `"${fname}"에서 음식 ${filled}칸을 불러왔어요` + (first ? '' : ' (날짜가 비어 있어 현재 시작일 유지)');
-  $('savedAt').textContent = msg; $('xlMsg').textContent = msg + '. 잘못 올렸으면 음식 일괄 넣기의 되돌리기로 취소하세요.';
+  const shown = state.meals.filter(m => m.show).map(m => m.name).join('·');
+  const msg = `"${fname}"에서 음식 ${filled}칸을 불러왔어요 (${shown})` + (first ? '' : ' (날짜가 비어 있어 현재 시작일 유지)');
+  $('savedAt').textContent = msg; $('xlMsg').textContent = msg + '. 잘못 올렸으면 Ctrl+Z나 음식 일괄 넣기의 되돌리기로 취소하세요.';
 }
 window.__importXlsx = importXlsx;   // 테스트용
 
