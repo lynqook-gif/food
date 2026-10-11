@@ -15,8 +15,15 @@ body.desk-layout{padding-left:222px!important}body.desk-layout>header,body.desk-
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{.desk-rail,.desk-hero{display:none!important}body.desk-layout{padding-left:0!important;background:white!important}}
 .desk-layout .wrap{grid-template-columns:260px minmax(0,1fr);padding:0 24px 24px}.desk-layout>.desk-hero{margin:24px;}.desk-layout .side{position:static}.desk-layout .side .box{background:#f8fcf9}.desk-layout .bar h1{color:var(--desk-dark)}@media(max-width:900px){.desk-layout .wrap{grid-template-columns:1fr;padding:14px}.desk-layout>.desk-hero{margin:14px}.desk-layout .side{position:static}}
-.desk-hero .desk-mascot{width:225px;right:24px;background-size:600% 185%;mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent)}
-@media(max-width:600px){.desk-hero .desk-mascot{width:100px;right:0;background-size:600% 135%;opacity:.55}.desk-copy{width:80%}}
 
-.desk-hero .desk-mascot{width:128px;right:42px;background-size:600% auto;background-position-y:0;mask-image:linear-gradient(to right,transparent,#000 6%,#000 94%,transparent)}.desk-bottom .desk-mascot{width:128px;margin:auto;background-size:600% auto;background-position-y:6%}
-@media(max-width:600px){.desk-hero .desk-mascot{width:85px;right:4px;background-size:600% auto;background-position-y:0;opacity:.6}}
+/* Sunny illustrated theme, original workspace arrangement retained. */
+body{background:linear-gradient(135deg,#f3f9ff,#eff6fc)!important}
+.desk-rail{background:linear-gradient(155deg,var(--desk-dark) 15%,color-mix(in srgb,var(--desk-dark),var(--desk-accent) 30%) 100%)}
+.desk-hero{min-height:300px;background:linear-gradient(100deg,#fff 8%,#edf8ff 100%);border-color:#cfe6fb;border-radius:16px;box-shadow:0 6px 26px #559fda0a}
+.desk-copy{width:66%}.desk-hero h1{font-weight:800}.desk-hero .desk-mascot{width:450px;height:300px;right:0;top:0;background-size:200% 200%;mask-image:linear-gradient(to right,transparent,#000 36%);background-color:transparent;opacity:1}
+.desk-mascot{background-image:url('mascots.png?v=2');background-size:200% 200%;background-position:100% 0%}
+.desk-bottom .desk-mascot{width:190px;height:127px;margin:auto;background-size:200% 200%;background-position:100% 0%;box-shadow:0 6px 22px #001c3920;border:1px solid #c8e7ff}
+.desk-menu .selected{background:linear-gradient(100deg,var(--desk-accent),color-mix(in srgb,var(--desk-accent),white 18%));box-shadow:0 5px 15px #1262ba20}
+.desk-layout .card,.desk-layout .box,.desk-layout .mcard{border-color:#d3e5f6!important}
+@media(max-width:1100px){.desk-hero{min-height:260px}.desk-hero .desk-mascot{width:390px;height:260px}.desk-copy{width:68%}}
+@media(max-width:600px){.desk-hero{min-height:240px}.desk-hero .desk-mascot{width:360px;height:240px;right:-70px;opacity:.45;mask-image:linear-gradient(to right,transparent,#000 70%)}.desk-copy{width:92%}.desk-hero p{max-width:260px}.desk-hero h1{font-size:24px}}
