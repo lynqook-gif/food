@@ -32,4 +32,10 @@ document.querySelectorAll('a[href*="open.kakao.com"]').forEach(a=>{if(a.closest(
 const finder=document.getElementById('find');
 function fitFinder(){if(!finder||finder.hidden)return;const desired=document.querySelector('.bar').getBoundingClientRect().bottom+8;const limit=Math.max(12,window.innerHeight-finder.getBoundingClientRect().height-12);const top=Math.round(Math.min(Math.max(12,desired),limit));if(finder.style.top!==top+'px')finder.style.top=top+'px';}
 if(finder){new MutationObserver(fitFinder).observe(finder,{attributes:true,attributeFilter:['hidden','style']});window.addEventListener('resize',fitFinder);window.addEventListener('scroll',fitFinder,{passive:true});}
+
+// One persistent support entry; keep author attribution without repeated calls to action.
+document.querySelectorAll('.credit').forEach(credit=>{const text=credit.textContent.split(/문의|카카오/)[0].replace(/[·/\s]+$/,'').trim();credit.textContent=text;});
+document.querySelectorAll('a[href*="open.kakao.com"]').forEach(a=>{if(a.closest('.desk-support'))return;const card=a.closest('.chatcta,.askbox,.ls-cta');if(card){card.remove();return;}a.remove();});
+document.querySelectorAll('.desk-contact-link img').forEach(img=>img.remove());
+document.querySelectorAll('.chatcta,.askbox,.ls-cta').forEach(el=>el.remove());document.querySelectorAll('.bottom').forEach(el=>{if(!el.children.length)el.remove()});
 })();
