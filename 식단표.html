@@ -188,6 +188,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
   <div class="actions">
     <button class="btn primary" id="printBtn" title="인쇄 창에서 대상을 'PDF로 저장'으로 고르면 PDF 파일이 됩니다">PDF 저장 · 인쇄</button>
     <button class="btn" id="findBtn" title="표에서 음식 찾기 (Ctrl+F)">메뉴 찾기</button>
+    <button class="btn" id="xlExport" title="모든 시트를 엑셀(.xlsx) 파일 하나로 저장">엑셀로 내보내기</button>
     <button class="btn" id="exportBtn" title="모든 시트를 .json 파일 하나로 저장">파일로 저장</button>
     <button class="btn" id="importBtn" title="엑셀(.xlsx·.xls·.csv) 또는 '파일로 저장'한 .json">엑셀·파일 불러오기</button>
     <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json,application/json" hidden>
@@ -207,7 +208,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       </ol>
       <p class="hint"><b>Ctrl+F</b>: 음식 찾기 · 칸을 <b>끌어서</b>(또는 Shift+클릭) 여러 칸을 고른 뒤 <b>Delete</b>로 지우기, <b>Ctrl+C / Ctrl+V</b>로 복사·붙여넣기(엑셀 표도 그대로 붙여져요) · <b>Ctrl+Z</b>: 방금 한 작업 되돌리기</p>
       <p class="hint">표 위의 <b>시트 탭</b>에서 <b>+ 새 시트</b>로 다른 식단표를 만들고, 탭을 두 번 누르거나 ✎로 이름을 바꿔요.</p>
-      <p class="hint">입력한 내용은 이 브라우저에 자동 저장돼요. 다른 PC에서 이어 하려면 <b>파일로 저장</b>한 뒤 그 파일을 불러오세요.</p>
+      <p class="hint">입력한 내용은 이 브라우저에 자동 저장돼요. 다른 PC에서 이어 하려면 <b>파일로 저장</b>한 뒤 그 파일을 불러오세요. 식단을 엑셀 파일로 받으려면 <b>엑셀로 내보내기</b>를 누르세요.</p>
     </details>
     <section class="box">
       <h2>기간</h2>
@@ -1084,8 +1085,11 @@ $('clearBtn').addEventListener('click', e => {
   state.cells = {}; state.sample = false; save(); render();
 });
 
-$('exportBtn').addEventListener('click', () =>
-  saveBlob(new Blob([JSON.stringify({ book: 3, active: book.active, sheets: book.sheets }, null, 1)], { type: 'application/json' }), `식단표_${state.start.slice(0,7)}.json`));
+$('exportBtn').addEventListener('click', () => {
+  const name = `식단표_${state.start.slice(0,7)}.json`;
+  saveBlob(new Blob([JSON.stringify({ book: 3, active: book.active, sheets: book.sheets }, null, 1)], { type: 'application/json' }), name);
+  toast(`"${name}"(백업 파일)을 저장했어요. 다른 PC에서 '엑셀·파일 불러오기'로 이어서 할 수 있어요.`);
+});
 $('importBtn').addEventListener('click', () => $('importFile').click());
 $('importFile').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
@@ -1131,24 +1135,52 @@ function saveBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// 지금 시트(state)의 식단을 업로드 서식과 같은 모양의 엑셀 시트로 만듦 (다시 올리면 그대로 들어감)
+function menuSheet(XLSX) {
+  const W = weekCount(), L = LINES(), aoa = [[state.title || autoTitle()]], merges = [];
+  for (let w = 0; w < W; w++) {
+    aoa.push(['', ...DAYS]);
+    aoa.push(['', ...DAYS.map((_, d) => iso(dateOf(w, d)))]);
+    state.meals.forEach((m, mi) => {
+      for (let i = 0; i < L; i++) aoa.push([i ? '' : m.name, ...DAYS.map((_, d) => state.cells[`${w}-${d}-${mi}-${i}`] || '')]);
+      if (L > 1) merges.push({ s: { r: aoa.length - L, c: 0 }, e: { r: aoa.length - 1, c: 0 } });
+    });
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = merges; ws['!cols'] = [{ wch: 8 }, ...DAYS.map(() => ({ wch: 18 }))];
+  return ws;
+}
+
+// 엑셀로 내보내기: 모든 시트를 엑셀 한 파일로 (지금 보는 시트가 맨 앞 → 다시 올리면 그 시트가 들어감)
+async function exportXlsx() {
+  const cur = state, used = new Set();
+  try {
+    const XLSX = await loadXlsxLib(), wb = XLSX.utils.book_new();
+    const order = [book.active, ...book.sheets.map((_, i) => i).filter(i => i !== book.active)];
+    try {
+      for (const i of order) {
+        state = book.sheets[i];
+        let base = (state.name || state.title || autoTitle()).replace(/[\[\]:*?\/\\]/g, ' ').trim().slice(0, 28) || '식단표', sn = base;
+        for (let k = 2; used.has(sn); k++) sn = `${base}(${k})`;
+        used.add(sn);
+        XLSX.utils.book_append_sheet(wb, menuSheet(XLSX), sn);
+      }
+    } finally { state = cur; }
+    const name = `식단표_${cur.start.slice(0, 7)}.xlsx`;
+    XLSX.writeFile(wb, name);
+    toast(`"${name}" 파일로 내보냈어요 (시트 ${order.length}개). 엑셀에서 열어 보거나, 고친 뒤 다시 불러올 수 있어요.`);
+  } catch (err) { toast('엑셀로 내보내지 못했어요: ' + (err && err.message || err)); }
+}
+$('xlExport').addEventListener('click', exportXlsx);
+
 // 업로드 서식: 식단표양식 기반 6주 자동 날짜 엑셀(build.js가 만든 것)에 지금 시작일·제외 음식을 넣어서 내려줌
 async function downloadTemplate() {
   const msg = $('xlMsg'); msg.textContent = '서식 만드는 중…';
   const custom = state.meals.map(m => m.name).join() !== DEFAULT_MEALS.join();
   if (custom) {   // 칸 구성을 바꿨으면 지금 칸 그대로(음식도 채워서) 간단한 서식을 만듦
     try {
-      const XLSX = await loadXlsxLib(), W = weekCount(), L = LINES(), aoa = [[state.title || autoTitle()]], merges = [];
-      for (let w = 0; w < W; w++) {
-        aoa.push(['', ...DAYS]);
-        aoa.push(['', ...DAYS.map((_, d) => iso(dateOf(w, d)))]);
-        state.meals.forEach((m, mi) => {
-          for (let i = 0; i < L; i++) aoa.push([i ? '' : m.name, ...DAYS.map((_, d) => state.cells[`${w}-${d}-${mi}-${i}`] || '')]);
-          if (L > 1) merges.push({ s: { r: aoa.length - L, c: 0 }, e: { r: aoa.length - 1, c: 0 } });
-        });
-      }
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!merges'] = merges; ws['!cols'] = [{ wch: 8 }, ...DAYS.map(() => ({ wch: 18 }))];
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '식단표');
+      const XLSX = await loadXlsxLib();
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, menuSheet(XLSX), '식단표');
       const name = `식단표_업로드서식_${state.start.slice(0, 7)}.xlsx`;
       XLSX.writeFile(wb, name);
       msg.textContent = `"${name}"을(를) 받았어요 (지금 칸 구성·음식 포함). 고친 뒤 ② 엑셀 업로드를 누르세요.`;
