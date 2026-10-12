@@ -90,3 +90,11 @@ body.desk-layout{font-size:15px;line-height:1.65;color:#20324b}.desk-menu button
 @media print{.desk-related-sites{display:none!important}}
 
 /* print-fix */@media print{.desk-layout .wrap{padding:0!important;gap:0!important;margin:0!important;max-width:none!important}}
+
+/* 식단표: 홈 버튼으로 여는 업데이트 안내·사이트 바로가기 */
+.desk-food-home{margin:0 28px 24px;display:flex;flex-direction:column;gap:28px}
+.desk-food-home[hidden]{display:none}
+.desk-food-home .desk-home-updates{margin:0}
+.desk-food-home .desk-related-sites{margin:0}
+@media(max-width:600px){.desk-food-home{margin:0 14px 16px;gap:22px}}
+@media print{.desk-food-home{display:none!important}}
