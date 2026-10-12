@@ -26,7 +26,7 @@ if(c.site==='law'){
  const hint=document.querySelector('#inputArea .hint');if(hint){const details=document.createElement('details');details.className='desk-help';const summary=document.createElement('summary');summary.textContent='출력 규칙과 미리보기 안내';hint.before(details);details.append(summary,hint);}
 }
 
-const bottom=rail.querySelector('.desk-bottom');bottom.innerHTML='<a class="desk-support" href="https://open.kakao.com/o/s1GnTRJi" target="_blank" rel="noopener"><img src="design/assistant-face.png" alt="" width="42" height="42"><span><b>도움이 필요하신가요?</b><small>문의·건의하기 ↗</small></span></a>';
+const bottom=rail.querySelector('.desk-bottom');bottom.innerHTML='<a class="desk-support" href="https://open.kakao.com/o/g4Tap2Ri" target="_blank" rel="noopener"><img src="design/assistant-face.png" alt="" width="42" height="42"><span><b>도움이 필요하신가요?</b><small>문의·건의하기 ↗</small></span></a>';
 document.querySelectorAll('a[href*="open.kakao.com"]').forEach(a=>{if(a.closest('.desk-rail')||a.classList.contains('fab'))return;a.classList.add('desk-contact-link');const img=document.createElement('img');img.src='design/assistant-face.png';img.alt='';img.width=30;img.height=30;a.prepend(img)});
 
 const finder=document.getElementById('find');
