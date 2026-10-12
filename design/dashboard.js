@@ -34,7 +34,7 @@ function fitFinder(){if(!finder||finder.hidden)return;const desired=document.que
 if(finder){new MutationObserver(fitFinder).observe(finder,{attributes:true,attributeFilter:['hidden','style']});window.addEventListener('resize',fitFinder);window.addEventListener('scroll',fitFinder,{passive:true});}
 
 // One persistent support entry; keep author attribution without repeated calls to action.
-document.querySelectorAll('.credit').forEach(credit=>{const text=credit.textContent.split(/문의|카카오/)[0].replace(/[·/\s]+$/,'').trim();credit.textContent=text;});
+document.querySelectorAll('.credit').forEach(credit=>{credit.textContent='제작자: 정주고등학교 박지은 / 문의: ican6363@naver.com';});
 document.querySelectorAll('a[href*="open.kakao.com"]').forEach(a=>{if(a.closest('.desk-support'))return;const card=a.closest('.chatcta,.askbox,.ls-cta');if(card){card.remove();return;}a.remove();});
 document.querySelectorAll('.desk-contact-link img').forEach(img=>img.remove());
 document.querySelectorAll('.chatcta,.askbox,.ls-cta').forEach(el=>el.remove());document.querySelectorAll('.bottom').forEach(el=>{if(!el.children.length)el.remove()});

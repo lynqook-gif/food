@@ -1,6 +1,7 @@
 @echo off
 cd /d "%~dp0"
 where git >nul 2>nul || set "PATH=%PATH%;C:\Program Files\Git\cmd"
+git pull --rebase --autostash -q
 echo [1/3] 식단표.html -^> index.html 복사
 copy /Y "식단표.html" "index.html" >nul
 echo [2/3] 변경사항 커밋
