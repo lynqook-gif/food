@@ -177,6 +177,35 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
   body:not(.plain) .page{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   tr.hd>*,tr.dayrow>*,th.meal{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* ---------- 2026-10-14 보기 좋게: 음식 칸 줄 표시(화면에만), 왼쪽 설정 글씨 ---------- */
+@media screen{
+  .lines input+input{border-top:1px dashed #cfd8e3}
+  body .page .lines input:hover{background:#eef4fb}
+  body .page .lines input:focus{background:#e3eefb;box-shadow:inset 0 0 0 1.5px var(--accent)}
+}
+.side .box{gap:10px;padding:16px 16px 18px}
+.side .box h2,.side .guide summary{display:flex;align-items:center;gap:8px;margin:0;font-size:16px;font-weight:800;letter-spacing:0;color:#1e3a5f}
+.side .box h2::before,.side .guide summary::before{content:"";flex:none;width:4px;height:17px;border-radius:2px;background:var(--accent)}
+.side .guide summary{list-style:none}
+.side .guide summary::-webkit-details-marker{display:none}
+.side .guide summary::after{content:"펼치기 ▾";margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent)}
+.side .guide[open] summary::after{content:"접기 ▴"}
+.side .guide[open] summary{margin-bottom:4px}
+.side .guide ol{font-size:14px;line-height:1.75;padding-left:20px;color:#26364d}
+.side .guide ol li+li{margin-top:2px}
+.side .guide .hint{padding:10px 12px;border-radius:8px;background:var(--accent-soft);margin:0}
+.side .box>h2+.hint{margin-top:-2px}
+.side .field{grid-template-columns:minmax(0,1fr);gap:6px}
+.side .field label{font-size:14px;font-weight:600;color:#26364d}
+.side .field input,.side .field select{min-height:36px;font-size:14px;border-color:#c9d6e4}
+.side .chips{gap:6px}
+.side .chips label{font-size:14px;padding:6px 12px;gap:5px;border-color:#c9d6e4}
+.side .seg button{padding:8px 0;font-size:14px;white-space:nowrap}
+.side .mealed{gap:6px}
+.side .mealed div{gap:4px}
+.side .mealed input{min-height:36px;font-size:14px;border-color:#c9d6e4}
+.side .mealed button{min-width:34px;font-size:14px}
 </style>
 <style id="pageSize">@page{size:A4 portrait;margin:0}</style>
 <link rel="stylesheet" href="design/dashboard.css?v=19">
