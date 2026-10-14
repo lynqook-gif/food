@@ -1,0 +1,22 @@
+# 공개 저장소(GitHub Pages) — 도구 파일만 올린다
+# 실제 식단·학생·회계 데이터 파일은 올리지 않는다
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.hwp
+*.hwpx
+*.pdf
+*.doc
+*.docx
+*.json
+*.zip
+
+# 사이트가 쓰는 빈 엑셀 서식 2개만 예외 (음식·이름 없음, 요일·끼니 칸만 있음)
+!식단표양식.xlsx
+!식단표_자동.xlsx
+
+# 이 PC 전용
+.claude/
+AGENTS.md
+CLAUDE.md
