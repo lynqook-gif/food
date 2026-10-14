@@ -98,3 +98,13 @@ body.desk-layout{font-size:15px;line-height:1.65;color:#20324b}.desk-menu button
 .desk-food-home .desk-related-sites{margin:0}
 @media(max-width:600px){.desk-food-home{margin:0 14px 16px;gap:22px}}
 @media print{.desk-food-home{display:none!important}}
+
+/* 2026-10-14 */
+.desk-update-button{display:none!important}
+.desk-related-sites>div{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.desk-layout :is(#sec-forms,#guide,#sec-links) .rbox.quick2,.desk-layout .l3page .rbox.quick2{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+@media(max-width:760px){.desk-related-sites>div,.desk-layout :is(#sec-forms,#guide,#sec-links) .rbox.quick2,.desk-layout .l3page .rbox.quick2{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.desk-credit{display:flex!important;flex-direction:column;align-items:center;gap:4px;line-height:1.7;text-align:center}
+.desk-credit b{font-weight:700}
+.desk-credit a{color:inherit;text-decoration:none}
+.desk-credit div:last-child a{color:var(--desk-accent,#2775ce);font-weight:700}
