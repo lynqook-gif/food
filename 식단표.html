@@ -1376,9 +1376,10 @@ async function importXlsx(buf, fname) {
   undoState = snapshot(); $('bulkUndo').hidden = false;
   state.cells = cells; state.sample = false;
   state.meals = meals.map((m, i) => ({ name: m.name, show: usedMeals.has(i) }));   // 엑셀에 있는 칸만 보이게
+  // 줄 수 = 음식이 가장 많은 칸의 개수 (빈 줄이 남지 않게). 인쇄 칸의 '끼니당 줄'에서 다시 바꿀 수 있음
   const before = LINES();
-  state.lines = Math.min(12, Math.max(before, need));
-  if (state.lines > before) setTimeout(() => toast(`음식이 가장 많은 칸이 ${need}개라서 끼니당 줄을 ${state.lines}줄로 늘렸어요.`), 600);
+  state.lines = Math.min(12, Math.max(3, need));
+  if (state.lines !== before) setTimeout(() => toast(`음식이 가장 많은 칸이 ${need}개라서 끼니당 줄을 ${state.lines}줄로 맞췄어요.`), 600);
   // 날짜가 적혀 있으면 그 날짜로 맞추고, 순서에서 벗어난 날짜는 '수정된 날짜'로
   const flat = dates.flat().filter(Boolean), first = flat[0];
   state.overrides = {};
