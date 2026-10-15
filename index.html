@@ -209,7 +209,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 </style>
 <style id="pageSize">@page{size:A4 portrait;margin:0}</style>
 <link rel="stylesheet" href="design/dashboard.css?v=19">
-<script defer src="design/dashboard.js?v=19"></script>
+<script defer src="design/dashboard.js?v=20"></script>
 
 
 <header class="bar">
@@ -245,6 +245,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
       <div class="field"><label for="start">시작일</label><input type="date" id="start"></div>
       <div class="field"><label for="weeks">주 수</label><select id="weeks"></select></div>
       <div class="field"><label>보기</label><div class="chips" id="mealView" role="group" aria-label="표에 보일 끼니"></div></div>
+      <div class="field"><label>요일</label><div class="chips" id="dayView" role="group" aria-label="표에 보일 요일"></div></div>
       <div class="field"><label for="title">제목</label><input type="text" id="title"></div>
       <div class="field"><label>제목 정렬</label>
         <div class="seg" id="titleAlign" role="group" aria-label="제목 정렬">
@@ -273,7 +274,10 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
         <select id="perPage"><option value="all">한 달 전체 (A4 세로)</option><option value="2">2주씩 (A4 가로)</option><option value="1">1주씩 (A4 가로)</option></select></div>
       <div class="field"><label for="lines">끼니당 줄</label>
         <select id="lines"><option value="3">3줄</option><option value="4">4줄</option><option value="5">5줄</option><option value="6">6줄</option><option value="7">7줄</option><option value="8">8줄</option><option value="9">9줄</option><option value="10">10줄</option><option value="11">11줄</option><option value="12">12줄</option></select></div>
+      <div class="field"><label for="fontScale">글씨 크기</label>
+        <select id="fontScale"><option value="0.8">아주 작게</option><option value="0.9">작게</option><option value="1">보통 (자동)</option><option value="1.1">크게</option><option value="1.2">더 크게</option><option value="1.35">아주 크게</option></select></div>
       <p class="hint" id="fitHint"></p>
+      <p class="hint">칸보다 긴 메뉴는 그 칸만 글씨가 저절로 작아져서 다 보이게 돼요.</p>
       <label class="check"><input type="checkbox" id="printColors"> 중복 색상도 인쇄하기</label>
     </section>
     <section class="box">
@@ -381,7 +385,7 @@ function sample() {
 const today = new Date();
 const firstNext = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1));
 const defaults = () => ({
-  start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', dupOn: true, lines: 7, printColors: false,
+  start: iso(firstNext), weeks: 'auto', title: '', titleAlign: 'center', perPage: 'all', dupMode: 'food', dupOn: true, lines: 7, printColors: false, days: [true,true,true,true,true,true], fontScale: 1,
   overrides: {}, cells: sample(), exclude: ['쌀밥','잡곡밥','배추김치','깍두기'], holidays: [], sample: true, v: 2,
   meals: DEFAULT_MEALS.map(name => ({ name, show: true })), name: '',
 });
@@ -391,6 +395,8 @@ function fix(s) {
   if (st.v !== 2) { st.perPage = 'all'; st.v = 2; }   // 이전 버전 저장분은 새 기본 인쇄(한 달 세로)로
   if (!Array.isArray(st.meals) || !st.meals.length) st.meals = defaults().meals;
   if (!st.meals.some(m => m.show !== false)) st.meals[0].show = true;
+  if (!Array.isArray(st.days) || st.days.length !== 6) st.days = [true,true,true,true,true,true];
+  if (!st.days.some(Boolean)) st.days[0] = true;
   return st;
 }
 
@@ -408,6 +414,8 @@ const setState = s => { state = s; book.sheets[book.active] = s; };
 const LINES = () => Math.min(12, Number(state.lines) || 7);
 const mealName = m => (state.meals[m] || {}).name || '';
 const visMeals = () => state.meals.map((_, i) => i).filter(i => state.meals[i].show !== false);
+// 표에 보일 요일 번호(0=월 … 5=토)
+const visDays = () => DAYS.map((_, i) => i).filter(i => !state.days || state.days[i] !== false);
 
 let saveTimer;
 function save() {
@@ -481,6 +489,8 @@ function render() {
   document.querySelectorAll('#titleAlign button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === state.titleAlign));
   $('perPage').value = String(state.perPage);
   $('lines').value = String(LINES());
+  $('fontScale').value = String(state.fontScale || 1);
+  $('dayView').innerHTML = DAYS.map((d, i) => `<label><input type="checkbox" data-di="${i}"${state.days[i] !== false ? ' checked' : ''}>${d}</label>`).join('');
   $('printColors').checked = state.printColors;
   document.body.classList.toggle('plain', !state.printColors);
   if (document.activeElement !== $('exclude')) $('exclude').value = state.exclude.join('\n');
@@ -524,8 +534,8 @@ function buildGrid() {
     gridIdx.set(`${w}-${m}-${i}`, grid.length); grid.push({ w, m, i });
   }
 }
-const posOf = k => { const [w, d, m, i] = k.split('-').map(Number); return { r: gridIdx.get(`${w}-${m}-${i}`), c: d }; };
-const keyAt = (r, c) => { const g = grid[r]; return g && c >= 0 && c < DAYS.length ? `${g.w}-${c}-${g.m}-${g.i}` : null; };
+const posOf = k => { const [w, d, m, i] = k.split('-').map(Number); return { r: gridIdx.get(`${w}-${m}-${i}`), c: visDays().indexOf(d) }; };
+const keyAt = (r, c) => { const g = grid[r], vd = visDays(); return g && c >= 0 && c < vd.length ? `${g.w}-${vd[c]}-${g.m}-${g.i}` : null; };
 
 // ---------- 시트 탭 ----------
 const sheetLabel = s => s.name || s.title || autoTitleOf(s);
@@ -667,7 +677,8 @@ function fit() {
   const pages = [...document.querySelectorAll('.page')]; if (!pages.length) return;
   const scs = document.querySelectorAll('.scroller');
   scs.forEach(s => s.style.zoom = 1);
-  const setLh = (pg, v) => { pg.style.setProperty('--lh', v + 'px'); pg.style.setProperty('--fs', Math.min(v * .78, 15) + 'px'); pg.style.setProperty('--hd', (Math.min(v * .78, 15) * 1.9) + 'px'); };
+  const fsOf = v => Math.min(v * .78, 15), sc = Number(state.fontScale) || 1;
+  const setLh = (pg, v, scaled) => { const fs = scaled ? Math.min(fsOf(v) * sc, v * .95) : fsOf(v); pg.style.setProperty('--lh', v + 'px'); pg.style.setProperty('--fs', fs + 'px'); pg.style.setProperty('--hd', (fsOf(v) * 1.9) + 'px'); };
   const p = pages[0], wk = p.querySelector('.weeks'), cs = getComputedStyle(p);
   const scale = Number(p.dataset.per) / Number(p.dataset.n);   // 첫 장이 덜 찼으면 꽉 찬 경우로 환산
   setLh(p, 10); const h1 = wk.offsetHeight * scale;
@@ -676,11 +687,25 @@ function fit() {
   const avail = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
     - p.querySelector('.ptitle').offsetHeight - parseFloat(cs.rowGap || cs.gap || 0) - 1;
   const lh = Math.min(MAX_LH, Math.floor(((avail - fixed) / slope) * 100) / 100);
-  pages.forEach(pg => setLh(pg, lh));
-  const pt = (lh * .78 * .75).toFixed(1);
+  pages.forEach(pg => setLh(pg, lh, true));
+  const pt = (Math.min(fsOf(lh) * sc, lh * .95) * .75).toFixed(1);
   $('fitHint').textContent = `인쇄 글씨 크기 약 ${pt}pt` + (pt < 6.5 ? ' · 작으면 끼니당 줄 수를 줄여 보세요' : '');
   zoomPages();
+  fitAllText();
 }
+// 칸보다 긴 메뉴는 그 칸만 글씨를 줄여서 다 보이게 (최소 55%)
+const measureCtx = document.createElement('canvas').getContext('2d');
+function fitText(el) {
+  el.style.fontSize = '';
+  if (!el.value) return;
+  const cs = getComputedStyle(el), base = parseFloat(cs.fontSize);
+  const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 1;
+  measureCtx.font = `${cs.fontWeight} ${base}px ${cs.fontFamily}`;
+  const need = measureCtx.measureText(el.value).width + base * el.value.length * (parseFloat(cs.letterSpacing) / base || 0);
+  if (!room || need <= room) return;
+  el.style.fontSize = (base * Math.max(.55, room / need)).toFixed(2) + 'px';
+}
+const fitAllText = () => document.querySelectorAll('.lines input').forEach(fitText);
 // 화면에서는 용지를 영역 너비에 맞춰 확대 (인쇄에는 영향 없음)
 function zoomPages() {
   const main = $('pages'), p = document.querySelector('.page'); if (!p) return;
@@ -691,17 +716,17 @@ let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTime
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const COLS = '<colgroup><col class="lab">' + DAYS.map(() => '<col>').join('') + '</colgroup>';
+const COLS = () => '<colgroup><col class="lab">' + visDays().map(() => '<col>').join('') + '</colgroup>';
 function dayHeader() {
   const t = document.createElement('table'); t.className = 'wk';
-  t.innerHTML = COLS + '<thead><tr class="dayrow"><th></th>' + DAYS.map((d, i) => `<th class="${i === 5 ? 'sat' : ''}">${d}</th>`).join('') + '</tr></thead>';
+  t.innerHTML = COLS() + '<thead><tr class="dayrow"><th></th>' + visDays().map(i => `<th class="${i === 5 ? 'sat' : ''}">${DAYS[i]}</th>`).join('') + '</tr></thead>';
   return t;
 }
 function weekTable(w, month) {
   const t = document.createElement('table'); t.className = 'wk';
   // 요일은 용지 맨 위에 한 번만, 주마다는 날짜만
-  let h = COLS + '<thead><tr class="hd"><th></th>';
-  DAYS.forEach((day, d) => {
+  let h = COLS() + '<thead><tr class="hd"><th></th>';
+  visDays().forEach(d => { const day = DAYS[d];
     const dt = dateOf(w, d), ovr = !!state.overrides[`${w}-${d}`], hol = holidayName(dt);
     h += `<th><div class="cell">` +
       `<button class="date${dt.getUTCMonth() !== month ? ' out' : ''}${ovr ? ' ovr' : ''}${hol ? ' hol' : ''}" data-w="${w}" data-d="${d}" aria-label="${md(dt)} ${day}요일${hol ? ' ' + esc(hol) : ''}" title="${hol ? esc(hol) + ' · ' : ''}${ovr ? '수정된 날짜 · ' : ''}눌러서 날짜 수정">${md(dt)}</button></div></th>`;
@@ -710,7 +735,7 @@ function weekTable(w, month) {
   visMeals().forEach(m => {
     const meal = esc(mealName(m));
     h += `<tr><th class="meal" data-m="${m}">${meal}</th>`;
-    DAYS.forEach((_, d) => {
+    visDays().forEach(d => {
       h += '<td><div class="lines">';
       for (let i = 0; i < LINES(); i++) {
         const k = `${w}-${d}-${m}-${i}`;
@@ -734,7 +759,7 @@ function markDuplicates() {
   const groups = new Map();
   for (const [k, v] of Object.entries(state.cells)) {
     const [w, d, m, i] = k.split('-').map(Number);
-    if (w >= W || i >= LINES() || !vis.has(m)) continue;
+    if (w >= W || i >= LINES() || !vis.has(m) || state.days[d] === false) continue;
     const n = norm(v);
     if (!n || ex.has(n)) continue;
     if (!groups.has(n)) groups.set(n, []);
@@ -1098,6 +1123,13 @@ $('bulkUndo').addEventListener('click', () => {
 
 $('perPage').addEventListener('change', e => { const v = e.target.value; state.perPage = v === 'all' ? 'all' : Number(v); save(); render(); });
 $('lines').addEventListener('change', e => { state.lines = Number(e.target.value); save(); render(); });
+$('fontScale').addEventListener('change', e => { state.fontScale = Number(e.target.value) || 1; save(); fit(); });
+$('dayView').addEventListener('change', e => {
+  const i = Number(e.target.dataset.di); if (Number.isNaN(i)) return;
+  if (!e.target.checked && visDays().length === 1) { e.target.checked = true; toast('요일을 하나 이상 보여야 해요.'); return; }
+  state.days[i] = e.target.checked; save(); render();
+});
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.lines input')) fitText(e.target); });
 $('printColors').addEventListener('change', e => { state.printColors = e.target.checked; document.body.classList.toggle('plain', !state.printColors); save(); });
 $('exclude').addEventListener('input', e => { state.exclude = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); markDuplicates(); save(); });
 $('holidays').addEventListener('input', e => { state.holidays = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); render(); save(); });
@@ -1315,7 +1347,7 @@ async function importXlsx(buf, fname) {
   };
   const fallback = () => { const i = meals.findIndex(m => m.name === '중식'); return i >= 0 ? i : 0; };
 
-  const cells = {}, dates = [], usedMeals = new Set();
+  const raw = {}, dates = [], usedMeals = new Set();
   let maxLines = 0, filled = 0, usedWeeks = 0;
   weeks.slice(0, 6).forEach((wk, w) => {
     dates.push(wk.dates);
@@ -1328,17 +1360,25 @@ async function importXlsx(buf, fname) {
       if (meal < 0) meal = fallback();
       const b = (base[meal] || 0) + (pend[meal] || 0); pend[meal] = 0;
       const h = Math.max(1, ...parts.map(p => p.length));
-      parts.forEach((p, d) => p.forEach((v, j) => { cells[`${w}-${d}-${meal}-${b + j}`] = v; filled++; }));
+      parts.forEach((p, d) => p.forEach((v, j) => { raw[`${w}-${d}-${meal}-${b + j}`] = v; filled++; }));
       usedMeals.add(meal); usedWeeks = Math.max(usedWeeks, w + 1);
       base[meal] = b + h; maxLines = Math.max(maxLines, base[meal]);
     }
   });
   if (!filled) throw new Error('요일 줄은 찾았지만 그 아래에서 음식을 찾지 못했어요.');
+  // 날짜·끼니마다 음식만 순서대로 모아 0번 줄부터 다시 놓음 (엑셀의 빈 줄 때문에 줄 수가 늘지 않게)
+  const cells = {}, slot = {};
+  Object.keys(raw).map(k => k.split('-').map(Number)).sort((a, c) => a[0] - c[0] || a[1] - c[1] || a[2] - c[2] || a[3] - c[3]).forEach(([w, d, m, i]) => {
+    const g = `${w}-${d}-${m}`, n = slot[g] || 0; cells[`${g}-${n}`] = raw[`${w}-${d}-${m}-${i}`]; slot[g] = n + 1;
+  });
+  const need = Math.max(0, ...Object.values(slot));
 
   undoState = snapshot(); $('bulkUndo').hidden = false;
   state.cells = cells; state.sample = false;
   state.meals = meals.map((m, i) => ({ name: m.name, show: usedMeals.has(i) }));   // 엑셀에 있는 칸만 보이게
-  state.lines = Math.min(12, Math.max(4, maxLines || 7));
+  const before = LINES();
+  state.lines = Math.min(12, Math.max(before, need));
+  if (state.lines > before) setTimeout(() => toast(`음식이 가장 많은 칸이 ${need}개라서 끼니당 줄을 ${state.lines}줄로 늘렸어요.`), 600);
   // 날짜가 적혀 있으면 그 날짜로 맞추고, 순서에서 벗어난 날짜는 '수정된 날짜'로
   const flat = dates.flat().filter(Boolean), first = flat[0];
   state.overrides = {};
