@@ -143,6 +143,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 .tab input{border:1px solid var(--accent);border-radius:4px;padding:3px 6px;width:11em;margin:3px 4px}
 .tabs .add{border:1px dashed var(--line);border-bottom:0;background:none;border-radius:6px 6px 0 0;padding:6px 10px;cursor:pointer;color:var(--accent);margin-bottom:-1px}
 .tabs .add:hover{border-color:var(--accent)}
+.tabs .add.clear{color:#C2473B}.tabs .add.clear:hover{border-color:#C2473B}
 
 /* ---------- 찾기 · 칸 여러 개 고르기 ---------- */
 .find{position:fixed;right:16px;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--paper-shadow);padding:6px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:calc(100vw - 32px)}
@@ -208,7 +209,7 @@ th.meal{font-size:var(--fs);font-weight:600;writing-mode:vertical-rl;letter-spac
 .side .mealed button{min-width:34px;font-size:14px}
 </style>
 <style id="pageSize">@page{size:A4 portrait;margin:0}</style>
-<link rel="stylesheet" href="design/dashboard.css?v=20261028-banner1">
+<link rel="stylesheet" href="design/dashboard.css?v=20261028-banner2">
 <script defer src="design/dashboard.js?v=20261026-dedup4"></script>
 
 
@@ -575,7 +576,10 @@ function renderTabs() {
   add.title = '지금 시트의 기간·칸 구성으로 빈 식단표를 만들어요'; add.onclick = () => newSheet(false);
   const dup = document.createElement('button'); dup.type = 'button'; dup.className = 'add'; dup.textContent = '복제';
   dup.title = '지금 시트를 음식까지 그대로 복사해요'; dup.onclick = () => newSheet(true);
-  tabs.append(add, dup);
+  // 메뉴 비우기는 위 막대 대신 복제 옆 (버튼은 그대로 옮겨 붙임 — 클릭 동작 유지)
+  const clr = renderTabs.clr || (renderTabs.clr = $('clearBtn'));
+  clr.className = 'add clear';
+  tabs.append(add, dup, clr);
 }
 function switchSheet(i) {
   book.active = i; state = book.sheets[i];
