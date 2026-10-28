@@ -112,3 +112,19 @@
  body.brand-food header.bar{padding:9px 28px!important;min-height:0!important}
  body.brand-food header.bar .actions{width:100%;justify-content:flex-end}
 }
+
+/* HOME-BANNER-20261028 (Claude): 식단표 홈 상단 = Codex 가로 긴 배너(design/home-banner-wide.webp 3780x536, 7:1).
+   글자·캐릭터는 가운데 1840px 안, 양옆은 급식실 배경만 → cover로 폭에 따라 양옆만 잘림.
+   PC(1200px 이상): 높이 210px 유지. 1199px 이하: 가운데 부분을 폭에 맞춰 표시. 원래 제목 글자는 화면 읽기용으로만 남김 */
+@media screen{
+ body.brand-food #design-hero{position:relative!important;overflow:hidden!important;background:#eef7f2 url("home-banner-wide.webp") 50% 50%/cover no-repeat!important}
+ body.brand-food #design-hero .desk-copy{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;margin:0!important;padding:0!important}
+ body.brand-food #design-hero .desk-mascot{display:none!important}
+}
+@media screen and (min-width:1200px){
+ body.brand-food #design-hero{display:block!important;height:210px!important;min-height:0!important;padding:0!important}
+}
+@media screen and (max-width:1199px){
+ body.brand-food #design-hero{display:block!important;height:auto!important;min-height:0!important;padding:0!important;background:#eef7f2!important}
+ body.brand-food #design-hero::before{content:""!important;display:block!important;aspect-ratio:2.8;background:url("home-banner-wide.webp") 50% 50%/cover no-repeat}
+}
