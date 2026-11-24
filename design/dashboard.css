@@ -141,8 +141,13 @@
     padding:7px 11px;border-radius:6px;background:#fff7e7;color:#244047;font-weight:650;white-space:nowrap;
   }
   body.brand-food #design-hero {
-    display:flex!important;height:auto!important;aspect-ratio:3/1;
-    background:#25454a url("food-christmas-kitchen.webp") center/cover no-repeat!important;
+    display:flex!important;height:clamp(245px, calc((100vw - 280px) / 3), 320px)!important;aspect-ratio:auto;
+    background:#25454a!important;
+  }
+  body.brand-food #design-hero::before {
+    content:"";display:block!important;position:absolute;inset:0 0 0 auto;width:auto;aspect-ratio:3/1;max-width:100%;
+    background:url("food-christmas-kitchen.webp") right center/auto 100% no-repeat;
+    mask-image:linear-gradient(to right,transparent,black 20%);
   }
   body.brand-food #design-hero .desk-copy {
     position:relative!important;width:42%!important;height:auto!important;margin:0 0 0 4%!important;padding:0!important;
@@ -162,10 +167,11 @@
   body.brand-food:has(.desk-food-home:not([hidden])).mobile-menu-open > .brand-topbar {position:fixed!important}
   body.brand-food #design-hero {
     display:block!important;aspect-ratio:auto;
-    min-height:330px!important;
-    background:linear-gradient(#25454a 41%,#25454a00 61%) top/100% 100% no-repeat,
-      #25454a url("food-christmas-kitchen.webp") 87% bottom/auto 208px no-repeat!important;
+    min-height:306px!important;
+    background:linear-gradient(#25454a 39%,#25454a00 56%) top/100% 100% no-repeat,
+      #25454a url("food-christmas-kitchen.webp") 88% bottom/auto 184px no-repeat!important;
   }
+  body.brand-food #design-hero::before {display:none!important}
   body.brand-food #design-hero .desk-copy {
     width:auto!important;max-width:none;margin:0!important;padding:59px 15px 0!important;text-align:center!important;
   }
