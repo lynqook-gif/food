@@ -209,3 +209,7 @@
 @media screen and (max-width: 800px) {
  body.brand-food #desk-food-home .desk-related-sites>div {grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+.desk-related-sites a.photo-related-card{position:relative;background:#f1f6fd}
+.desk-related-sites a.photo-related-card > span{visibility:hidden}
+.desk-related-sites .photo-related-card img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain;border-radius:inherit}
