@@ -126,7 +126,7 @@
   releases.innerHTML = `
     <header><h2 id="food-release-title">공지사항</h2><form method="dialog"><button class="btn">닫기</button></form></header>
     <div class="desk-release-body">
-      <article><time datetime="2026-11-25">2026. 11. 25.</time><h3>식단표 편집기 화면 정리</h3><ul><li>홈에 자주 쓰는 작업과 최근 공지를 모았어요.</li><li>엑셀과 인쇄 버튼은 식단표 작성 화면에서 바로 찾을 수 있어요.</li></ul></article>
+      <article><time datetime="2026-11-25">2026. 11. 25.</time><h3>사이트를 새 모습으로 바꿨어요</h3><ul><li>화면을 깔끔하게 정리했어요.</li><li>식단표 종이와 인쇄는 그대로예요.</li><li>예전 화면이 보이면 <b>Ctrl+F5</b>를 눌러 주세요.</li></ul></article>
       <article><time datetime="2026-11-24">2026. 11. 24.</time><h3>바로가기를 교행e 카드로 바꿨어요</h3><ul><li>사이트 바로가기를 교행e 카드로 바꿨어요.</li></ul></article>
       <article><time datetime="2026-11-24">2026. 11. 24.</time><h3>첫 화면 크리스마스 단장</h3><ul><li>첫 화면을 크리스마스 느낌으로 바꿨어요. 쿠키 굽는 교행e를 만나 보세요.</li><li>교행e 사이트 바로가기를 보기 좋게 정리했어요.</li><li>배너 높이를 줄였어요.</li></ul></article>
       <article><time datetime="2026-11-24">2026. 11. 24.</time><h3>엑셀 올리기 · 되돌리기 · 알레르기 안내</h3><ul><li>엑셀을 올릴 때 지금 식단이 있으면 <b>새 시트로 넣을지</b> 물어봐요. 메뉴 비우기·시트 지우기도 <b>되돌리기</b>가 돼요.</li><li>인쇄 칸에서 용지 아래 <b>알레르기 번호 안내</b>를 넣을 수 있어요(기본 꺼짐). 버튼 이름을 다른 교행e 도구와 같게 맞췄어요.</li><li>엑셀 기능이 인터넷 없이도 돼요. 2028년 설날 날짜를 바로잡았어요.</li></ul></article>
